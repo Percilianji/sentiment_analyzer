@@ -1,7 +1,6 @@
 from app.database.models import User
 from app.database.database import db
 from app.auth.utils import check_password, hash_password
-from flask_jwt_extended import create_access_token
 
 
 class AuthService:
@@ -22,7 +21,12 @@ class AuthService:
         )
 
         db.session.add(user)
-        db.session.commit()
+        
+        try:
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            raise e
         return user
 
     @staticmethod
@@ -36,3 +40,5 @@ class AuthService:
             return None
 
         return user
+    
+    

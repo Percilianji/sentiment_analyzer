@@ -5,6 +5,12 @@ from app.config.settings import Config
 from app.database.models import *
 from flask_jwt_extended import JWTManager
 from app.auth.routes import auth_bp
+from app.users.routes import users_bp
+from app.universities.routes import universities_bp
+from app.topics.routes import topics_bp
+
+
+
 
 
 app = Flask(__name__)
@@ -14,6 +20,9 @@ db.init_app(app)
 migrate = Migrate(app, db)
 jwt = JWTManager(app)
 app.register_blueprint(auth_bp, url_prefix="/auth")
+app.register_blueprint(users_bp, url_prefix="/users")
+app.register_blueprint(universities_bp, url_prefix="/universities")
+app.register_blueprint(topics_bp, url_prefix="/topics")
 
 with app.app_context():
     pass
