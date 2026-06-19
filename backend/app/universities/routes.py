@@ -55,6 +55,23 @@ def get_active_universities():
     ])
 
 
+@universities_bp.route("/<int:uni_id>", methods=["GET"])
+@jwt_required()
+def get_university(uni_id):
+    uni = UniversityService.get_by_id(uni_id)
+
+    if not uni:
+        return jsonify({"message": "University not found"}), 404
+
+    return jsonify({
+        "id": uni.id,
+        "name": uni.name,
+        "keywords": uni.keywords,
+        "active": uni.active,
+        "sentiment_index": uni.sentiment_index
+    })
+
+
 @universities_bp.route("/<int:uni_id>", methods=["PUT"])
 @jwt_required()
 @admin_required
@@ -88,9 +105,13 @@ def toggle_university(uni_id):
 @jwt_required()
 @admin_required
 def delete_university(uni_id):
-    result = UniversityService.delete(uni_id)
+    uni = UniversityService.delete(uni_id)
 
-    if not result:
+    if not uni:
         return jsonify({"message": "University not found"}), 404
 
-    return jsonify({"message": "Deleted"})
+    return jsonify({
+        "id": uni.id,
+        "active": uni.active,
+        "message": "University deactivated"
+    })

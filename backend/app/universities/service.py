@@ -34,6 +34,11 @@ class UniversityService:
 
 
     @staticmethod
+    def get_by_id(uni_id):
+        return University.query.get(uni_id)
+
+
+    @staticmethod
     def update(uni_id, data):
         uni = University.query.get(uni_id)
 
@@ -75,11 +80,11 @@ class UniversityService:
         if not uni:
             return None
 
-        db.session.delete(uni)
+        uni.active = False
         
         try:
             db.session.commit()
         except Exception as e:
             db.session.rollback()
             raise e
-        return True
+        return uni

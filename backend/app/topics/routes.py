@@ -36,6 +36,21 @@ def get_topics():
         }
         for t in topics
     ])
+
+
+@topics_bp.route("/<int:topic_id>", methods=["GET"])
+def get_topic(topic_id):
+
+    topic = TopicService.get_by_id(topic_id)
+
+    if not topic:
+        return jsonify({"message": "Topic not found"}), 404
+
+    return jsonify({
+        "id": topic.id,
+        "name": topic.name,
+        "keywords": topic.keywords
+    })
     
 @topics_bp.route("/<int:topic_id>", methods=["PUT"])
 @jwt_required()

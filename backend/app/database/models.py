@@ -32,28 +32,53 @@ class Topic(db.Model):
 
 
 #  POST
+# class Post(db.Model):
+#     __tablename__ = "posts"
+#     id = db.Column(db.Integer, primary_key=True)
+#     university_id = db.Column(db.Integer, db.ForeignKey("universities.id"), nullable=False)
+#     content = db.Column(db.Text, nullable=False)
+#     author = db.Column(db.String(120))
+#     source = db.Column(db.String(100))
+#     url = db.Column(db.Text)
+#     post_date = db.Column(db.DateTime)
+#     content_hash = db.Column(db.String(32),unique=True,nullable=False) 
+#     __table_args__ = (
+#     db.Index("idx_content_hash", "content_hash"),
+#     db.Index("idx_url", "url"),)
+#     url = db.Column(db.Text,unique=True)
+#     collected_at = db.Column(db.DateTime, default=datetime.utcnow)
+#     is_deleted = db.Column(db.Boolean, default=False)
+
 class Post(db.Model):
     __tablename__ = "posts"
     id = db.Column(db.Integer, primary_key=True)
-    university_id = db.Column(db.Integer, db.ForeignKey("universities.id"), nullable=False)
+    university_id = db.Column(db.Integer,db.ForeignKey("universities.id"),nullable=False)
     content = db.Column(db.Text, nullable=False)
     author = db.Column(db.String(120))
     source = db.Column(db.String(100))
-    url = db.Column(db.Text)
+    url = db.Column(db.Text, nullable=False)
+    topic = db.Column(db.String(100), nullable=True)
+    source_type = db.Column(db.String(20),default="full_page",nullable=False)
     post_date = db.Column(db.DateTime)
-    content_hash = db.Column(db.String(64), unique=True)
-    collected_at = db.Column(db.DateTime, default=datetime.utcnow)
+    content_hash = db.Column(db.String(64),unique=True,nullable=False)
+    collected_at = db.Column(db.DateTime,default=datetime.utcnow)
     is_deleted = db.Column(db.Boolean, default=False)
+    __table_args__ = (
+        db.Index("idx_content_hash", "content_hash"),
+        db.Index("idx_url", "url"),
+        db.Index("idx_source_type", "source_type"),
+    )
 
-
-#  CLEANED TEXT
 class CleanedText(db.Model):
     __tablename__ = "cleaned_texts"
     id = db.Column(db.Integer, primary_key=True)
-    post_id = db.Column(db.Integer, db.ForeignKey("posts.id"), unique=True)
+    post_id = db.Column(db.Integer,db.ForeignKey("posts.id"),nullable=False,unique=True )
     cleaned_content = db.Column(db.Text, nullable=False)
-
-
+    source_type = db.Column(db.String(20), nullable=False)
+    __table_args__ = (
+    db.Index("idx_cleaned_post_id", "post_id"),
+    db.Index("idx_cleaned_source_type", "source_type"),
+)
 # SENTIMENT RESULT
 class SentimentResult(db.Model):
     __tablename__ = "sentiment_results"
@@ -62,7 +87,9 @@ class SentimentResult(db.Model):
     vader_score = db.Column(db.Float)
     xlm_label = db.Column(db.String(50))
     final_label = db.Column(db.String(20))
-
+    is_event = db.Column(db.Boolean, default=False)
+    classified_at = db.Column(db.DateTime, default=datetime.utcnow)
+    post_date = db.Column(db.DateTime)
 
 # SUMMARY
 class Summary(db.Model):
