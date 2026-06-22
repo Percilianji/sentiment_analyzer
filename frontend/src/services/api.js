@@ -47,3 +47,43 @@ export const dashboardApi = {
       method: "DELETE",
     }),
 };
+
+export const universityApi = {
+  get: (universityId) => request(`/universities/${universityId}`),
+  create: (university) =>
+    request("/universities/", {
+      method: "POST",
+      body: JSON.stringify(university),
+    }),
+  update: (universityId, university) =>
+    request(`/universities/${universityId}`, {
+      method: "PUT",
+      body: JSON.stringify(university),
+    }),
+  toggle: (universityId) =>
+    request(`/universities/${universityId}/toggle`, {
+      method: "PATCH",
+    }),
+  delete: (universityId) =>
+    request(`/universities/${universityId}`, {
+      method: "DELETE",
+    }),
+};
+
+export const userApi = {
+  list: () => request("/users/"),
+  create: (user) =>
+    request("/users/", {
+      method: "POST",
+      body: JSON.stringify(user),
+    }),
+  updateRole: (userId, role) =>
+    request(`/users/${userId}/role`, {
+      method: "PUT",
+      body: JSON.stringify({ role }),
+    }),
+  delete: (userId) =>
+    request(`/users/${userId}`, {
+      method: "DELETE",
+    }),
+};
