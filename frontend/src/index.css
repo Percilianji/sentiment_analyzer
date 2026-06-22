@@ -1,0 +1,41 @@
+@font-face {
+  font-family: "MTN Sans";
+  src: url("./assets/fonts/mtn-sans.ttf") format("truetype");
+  font-display: swap;
+}
+
+:root {
+  color: #10221a;
+  background: #f4f7f2;
+  font-family:
+    "MTN Sans", "MTN Brighter Sans", "MTN", Inter, ui-sans-serif, system-ui,
+    -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  overflow: hidden;
+}
+
+button,
+input {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
