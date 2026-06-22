@@ -6,6 +6,10 @@ class UniversityService:
 
     @staticmethod
     def create(name, keywords):
+        existing_uni = University.query.filter(University.name.ilike(name)).first()
+        if existing_uni:
+            raise ValueError("A university with this name already exists")
+
         uni = University(
             name=name,
             keywords=keywords,
@@ -45,7 +49,16 @@ class UniversityService:
         if not uni:
             return None
 
-        uni.name = data.get("name", uni.name)
+        next_name = data.get("name", uni.name)
+        existing_uni = University.query.filter(
+            University.name.ilike(next_name),
+            University.id != uni_id
+        ).first()
+
+        if existing_uni:
+            raise ValueError("A university with this name already exists")
+
+        uni.name = next_name
         uni.keywords = data.get("keywords", uni.keywords)
 
         try:

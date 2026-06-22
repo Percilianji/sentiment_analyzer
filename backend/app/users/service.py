@@ -7,6 +7,11 @@ class UserService:
 
     @staticmethod
     def create_user(name, email, password, role):
+        existing_user = User.query.filter_by(email=email).first()
+
+        if existing_user:
+            raise ValueError("A user with this email already exists")
+
         user = User(
             name=name,
             email=email,

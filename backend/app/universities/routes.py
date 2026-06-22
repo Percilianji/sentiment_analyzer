@@ -10,12 +10,19 @@ universities_bp = Blueprint("universities", __name__)
 @jwt_required()
 @admin_required
 def create_university():
-    data = request.get_json()
+    data = request.get_json() or {}
+    name = (data.get("name") or "").strip()
 
-    uni = UniversityService.create(
-        name=data["name"],
-        keywords=data.get("keywords", "")
-    )
+    if not name:
+        return jsonify({"message": "University name is required"}), 400
+
+    try:
+        uni = UniversityService.create(
+            name=name,
+            keywords=(data.get("keywords") or "").strip()
+        )
+    except ValueError as error:
+        return jsonify({"message": str(error)}), 409
 
     return jsonify({
         "id": uni.id,
@@ -76,9 +83,20 @@ def get_university(uni_id):
 @jwt_required()
 @admin_required
 def update_university(uni_id):
-    data = request.get_json()
+    data = request.get_json() or {}
+    if "name" in data:
+        data["name"] = (data.get("name") or "").strip()
 
-    uni = UniversityService.update(uni_id, data)
+        if not data["name"]:
+            return jsonify({"message": "University name is required"}), 400
+
+    if "keywords" in data:
+        data["keywords"] = (data.get("keywords") or "").strip()
+
+    try:
+        uni = UniversityService.update(uni_id, data)
+    except ValueError as error:
+        return jsonify({"message": str(error)}), 409
 
     if not uni:
         return jsonify({"message": "University not found"}), 404

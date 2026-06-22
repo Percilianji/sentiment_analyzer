@@ -7,6 +7,7 @@ from sqlalchemy import func
 
 from app.database.database import db
 from app.database.models import Post, SentimentResult, Summary, Topic, University
+from app.auth.decorators import admin_required
 from app.nlp.topic_classifier import DEFAULT_TOPIC_KEYWORDS
 
 
@@ -298,6 +299,7 @@ def overview():
 
 @dashboard_bp.route("/posts/<int:post_id>", methods=["DELETE"])
 @jwt_required()
+@admin_required
 def delete_post(post_id):
     post = Post.query.get(post_id)
 

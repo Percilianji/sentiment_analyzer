@@ -10,14 +10,24 @@ users_bp = Blueprint("users", __name__)
 @jwt_required()
 @admin_required
 def create_user():
-    data = request.get_json()
+    data = request.get_json() or {}
+    name = (data.get("name") or "").strip()
+    email = (data.get("email") or "").strip().lower()
+    password = (data.get("password") or "").strip()
+    role = (data.get("role") or "viewer").strip().lower()
 
-    user = UserService.create_user(
-        name=data["name"],
-        email=data["email"],
-        password=data["password"],
-        role=data["role"]
-    )
+    if not name or not email or not password:
+        return jsonify({"message": "Name, email, and password are required"}), 400
+
+    try:
+        user = UserService.create_user(
+            name=name,
+            email=email,
+            password=password,
+            role=role
+        )
+    except ValueError as error:
+        return jsonify({"message": str(error)}), 409
 
     return jsonify({
         "id": user.id,
@@ -46,9 +56,13 @@ def get_users():
 @jwt_required()
 @admin_required
 def update_role(user_id):
-    data = request.get_json()
+    data = request.get_json() or {}
+    role = (data.get("role") or "").strip().lower()
 
-    user = UserService.update_role(user_id, data["role"])
+    if not role:
+        return jsonify({"message": "Role is required"}), 400
+
+    user = UserService.update_role(user_id, role)
 
     if not user:
         return jsonify({"message": "User not found"}), 404
