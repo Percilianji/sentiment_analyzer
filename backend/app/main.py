@@ -1,6 +1,7 @@
 from flask import Flask
 from flask_migrate import Migrate
 from app.database.database import db
+from app.email.extensions import mail
 from app.config.settings import Config
 import os
 from app.database.models import *
@@ -19,6 +20,7 @@ app = Flask(__name__)
 app.config.from_object(Config)
 
 db.init_app(app)
+mail.init_app(app)
 migrate = Migrate(app, db)
 jwt = JWTManager(app)
 app.register_blueprint(auth_bp, url_prefix="/auth")

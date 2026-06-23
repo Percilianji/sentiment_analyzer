@@ -13,17 +13,15 @@ def create_user():
     data = request.get_json() or {}
     name = (data.get("name") or "").strip()
     email = (data.get("email") or "").strip().lower()
-    password = (data.get("password") or "").strip()
     role = (data.get("role") or "viewer").strip().lower()
 
-    if not name or not email or not password:
-        return jsonify({"message": "Name, email, and password are required"}), 400
+    if not name or not email:
+        return jsonify({"message": "Name and email are required"}), 400
 
     try:
-        user = UserService.create_user(
+        user, setup_link, email_sent = UserService.create_user(
             name=name,
             email=email,
-            password=password,
             role=role
         )
     except ValueError as error:
@@ -31,6 +29,8 @@ def create_user():
 
     return jsonify({
         "id": user.id,
+        "email_sent": email_sent,
+        "setup_link": None if email_sent else setup_link,
         "message": "User created"
     })
 
@@ -68,6 +68,40 @@ def update_role(user_id):
         return jsonify({"message": "User not found"}), 404
 
     return jsonify({"message": "Role updated"})
+
+
+@users_bp.route("/<int:user_id>", methods=["PUT"])
+@jwt_required()
+@admin_required
+def update_user(user_id):
+    data = request.get_json() or {}
+    name = (data.get("name") or "").strip()
+    email = (data.get("email") or "").strip().lower()
+    role = (data.get("role") or "").strip().lower()
+
+    if not name or not email or not role:
+        return jsonify({"message": "Name, email, and role are required"}), 400
+
+    try:
+        user = UserService.update_user(
+            user_id=user_id,
+            name=name,
+            email=email,
+            role=role
+        )
+    except ValueError as error:
+        return jsonify({"message": str(error)}), 409
+
+    if not user:
+        return jsonify({"message": "User not found"}), 404
+
+    return jsonify({
+        "id": user.id,
+        "name": user.name,
+        "email": user.email,
+        "role": user.role,
+        "message": "User updated"
+    })
 
 
 @users_bp.route("/<int:user_id>", methods=["DELETE"])

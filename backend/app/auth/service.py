@@ -36,6 +36,9 @@ class AuthService:
         if not user:
             return None
 
+        if not user.password_hash:
+            return None
+
         if not check_password(password, user.password_hash):
             return None
 
