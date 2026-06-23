@@ -916,6 +916,159 @@
   gap: 0.9rem;
 }
 
+.event-summary-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.event-filter-panel {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(180px, 360px));
+  gap: 0.9rem;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--card-bg);
+  box-shadow: 0 12px 28px rgba(16, 35, 24, 0.08);
+  padding: 0.9rem;
+}
+
+.event-filter-panel label {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.event-filter-panel span {
+  color: var(--muted);
+  font-size: 0.68rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.event-filter-panel select {
+  min-height: 40px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #ffffff;
+  color: var(--text);
+  padding: 0 0.65rem;
+  font-family: inherit;
+  font-size: 0.84rem;
+}
+
+.event-chart {
+  height: 300px;
+}
+
+.event-timeline {
+  display: grid;
+  gap: 0.75rem;
+  padding: 0.9rem;
+}
+
+.event-item {
+  display: grid;
+  grid-template-columns: 118px minmax(0, 1fr);
+  gap: 0.85rem;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--card-soft);
+  padding: 0.85rem;
+  min-width: 0;
+}
+
+.event-date {
+  display: grid;
+  align-content: start;
+  gap: 0.35rem;
+}
+
+.event-date strong {
+  color: var(--text);
+  font-size: 0.84rem;
+}
+
+.event-date span {
+  width: max-content;
+  border-radius: 999px;
+  background: rgba(5, 68, 37, 0.1);
+  color: var(--brand-green);
+  padding: 0.25rem 0.5rem;
+  font-size: 0.68rem;
+  font-weight: 800;
+  text-transform: capitalize;
+}
+
+.event-content {
+  display: grid;
+  gap: 0.65rem;
+  min-width: 0;
+}
+
+.event-main-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.event-source-link {
+  display: inline-flex;
+  width: 28px;
+  min-width: 28px;
+  height: 28px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #d8e0da;
+  border-radius: 999px;
+  background: #ffffff;
+  color: var(--brand-green);
+  text-decoration: none;
+}
+
+.event-actions {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.4rem;
+}
+
+.event-actions button {
+  display: inline-flex;
+  width: 34px;
+  min-height: 34px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #c9d8ce;
+  border-radius: 8px;
+  background: #ffffff;
+  color: var(--brand-green);
+  padding: 0;
+}
+
+.event-actions button.is-danger {
+  border-color: rgba(220, 38, 38, 0.28);
+  color: var(--negative);
+}
+
+.event-content h3 {
+  margin: 0 0 0.25rem;
+  color: var(--text);
+  font-size: 0.95rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.event-content p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.84rem;
+  line-height: 1.5;
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
 .users-page {
   display: grid;
   gap: 0.9rem;
@@ -1188,6 +1341,19 @@
   text-transform: uppercase;
 }
 
+.user-role-cell {
+  text-transform: capitalize;
+}
+
+.users-table th.actions-heading,
+.users-table .universities-actions-cell {
+  width: 148px;
+}
+
+.topics-table td:nth-child(2) {
+  max-width: 520px;
+}
+
 .role-select,
 .university-form-field select {
   min-height: 38px;
@@ -1223,7 +1389,7 @@
 
 .report-date-row {
   display: grid;
-  grid-template-columns: repeat(2, minmax(180px, 1fr)) auto;
+  grid-template-columns: repeat(3, minmax(160px, 1fr)) auto;
   align-items: end;
   gap: 0.95rem;
 }
@@ -1240,7 +1406,8 @@
   text-transform: uppercase;
 }
 
-.report-date-row input {
+.report-date-row input,
+.report-date-row select {
   width: 100%;
   min-height: 40px;
   border: 1px solid var(--line);
@@ -1469,7 +1636,8 @@
 }
 
 .universities-table th.actions-heading,
-.sentiment-table th.actions-heading {
+.sentiment-table th.actions-heading,
+.users-table th.actions-heading {
   text-align: right;
 }
 
@@ -2092,6 +2260,16 @@
 
   .report-date-row {
     grid-template-columns: 1fr;
+  }
+
+  .event-filter-panel,
+  .event-item,
+  .event-main-row {
+    grid-template-columns: 1fr;
+  }
+
+  .event-actions {
+    justify-content: flex-start;
   }
 
   .topic-selector {

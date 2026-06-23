@@ -14,7 +14,6 @@ import {
 import { Bar, Doughnut, Line } from "react-chartjs-2";
 import {
   BarChart3,
-  Building2,
   Check,
   ChevronDown,
   ChevronLeft,
@@ -22,6 +21,7 @@ import {
   FileText,
   Gauge,
   Eye,
+  ExternalLink,
   LayoutDashboard,
   LogOut,
   MoreVertical,
@@ -30,13 +30,14 @@ import {
   Search,
   School,
   Settings,
+  Tags,
   TrendingDown,
   Trash2,
   Users,
   X,
 } from "lucide-react";
 import logo from "../../assets/unipulse-logo.png";
-import { dashboardApi, universityApi, userApi } from "../../services/api";
+import { dashboardApi, topicApi, universityApi, userApi } from "../../services/api";
 import "./DashboardPage.css";
 
 ChartJS.register(
@@ -53,6 +54,7 @@ ChartJS.register(
 
 const EMPTY_ARRAY = [];
 const SENTIMENT_PAGE_SIZE = 10;
+const EVENT_PAGE_SIZE = 5;
 
 const formatTopicName = (topicName) => {
   if (!topicName) {
@@ -143,21 +145,21 @@ const navGroups = [
     label: "Analysis",
     items: [
       { icon: Gauge, label: "Compare", page: "compare" },
-      { icon: TrendingDown, label: "Weak topics" },
+      { icon: TrendingDown, label: "Events", page: "events" },
+      { icon: Tags, label: "Topics", page: "topics" },
       { icon: FileText, label: "Reports", page: "reports" },
     ],
   },
   {
     label: "Admin",
     items: [
-      { icon: Building2, label: "School manager" },
       { icon: Users, label: "Users", page: "users" },
       { icon: Settings, label: "Settings" },
     ],
   },
 ];
 
-function DashboardPage({ user, onLogout }) {
+function DashboardPage({ user, onLogout, onUserChange }) {
   const isAdmin = String(user?.role || "").toLowerCase() === "admin";
   const overviewTrendChartRef = useRef(null);
   const overviewMixChartRef = useRef(null);
@@ -188,6 +190,10 @@ function DashboardPage({ user, onLogout }) {
   const [reportSourceFilter, setReportSourceFilter] = useState("all");
   const [reportStartDate, setReportStartDate] = useState("");
   const [reportEndDate, setReportEndDate] = useState("");
+  const [reportFormat, setReportFormat] = useState("csv");
+  const [eventUniversityFilter, setEventUniversityFilter] = useState("all");
+  const [eventTimeframe, setEventTimeframe] = useState("all");
+  const [eventPage, setEventPage] = useState(1);
   const [overviewChart, setOverviewChart] = useState("trend");
   const [openChartMenu, setOpenChartMenu] = useState("");
   const [universityModalMode, setUniversityModalMode] = useState(null);
@@ -200,10 +206,24 @@ function DashboardPage({ user, onLogout }) {
   const [isLoadingUniversity, setIsLoadingUniversity] = useState(false);
   const [isSavingUniversity, setIsSavingUniversity] = useState(false);
   const [isDeletingUniversity, setIsDeletingUniversity] = useState(false);
+  const [topics, setTopics] = useState([]);
+  const [isLoadingTopics, setIsLoadingTopics] = useState(false);
+  const [topicSearch, setTopicSearch] = useState("");
+  const [isTopicModalOpen, setIsTopicModalOpen] = useState(false);
+  const [topicModalMode, setTopicModalMode] = useState("create");
+  const [selectedManagedTopic, setSelectedManagedTopic] = useState(null);
+  const [isSavingTopic, setIsSavingTopic] = useState(false);
+  const [isDeletingTopic, setIsDeletingTopic] = useState(false);
+  const [topicForm, setTopicForm] = useState({
+    name: "",
+    keywords: "",
+  });
   const [users, setUsers] = useState([]);
   const [isLoadingUsers, setIsLoadingUsers] = useState(false);
   const [userSearch, setUserSearch] = useState("");
   const [isUserModalOpen, setIsUserModalOpen] = useState(false);
+  const [userModalMode, setUserModalMode] = useState("create");
+  const [selectedUser, setSelectedUser] = useState(null);
   const [isSavingUser, setIsSavingUser] = useState(false);
   const [isDeletingUser, setIsDeletingUser] = useState(false);
   const [userForm, setUserForm] = useState({
@@ -212,6 +232,16 @@ function DashboardPage({ user, onLogout }) {
     password: "",
     role: "analyst",
   });
+  const visibleNavGroups = useMemo(
+    () =>
+      navGroups
+        .map((group) => ({
+          ...group,
+          items: group.items.filter((item) => group.label !== "Admin" || isAdmin),
+        }))
+        .filter((group) => group.items.length),
+    [isAdmin],
+  );
 
   const refreshDashboard = useCallback(async () => {
     const data = await dashboardApi.overview();
@@ -301,6 +331,50 @@ function DashboardPage({ user, onLogout }) {
     }
 
     loadUsers();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [activePage, isAdmin]);
+
+  useEffect(() => {
+    if (!isAdmin && activePage === "users") {
+      setActivePage("overview");
+    }
+  }, [activePage, isAdmin]);
+
+  useEffect(() => {
+    setEventPage(1);
+  }, [eventTimeframe, eventUniversityFilter]);
+
+  useEffect(() => {
+    if (activePage !== "topics") {
+      return;
+    }
+
+    let isMounted = true;
+
+    async function loadTopics() {
+      setIsLoadingTopics(true);
+
+      try {
+        const data = await topicApi.list();
+
+        if (isMounted) {
+          setTopics(data);
+        }
+      } catch (topicError) {
+        if (isMounted) {
+          setError(topicError.message || "Could not load topics.");
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoadingTopics(false);
+        }
+      }
+    }
+
+    loadTopics();
 
     return () => {
       isMounted = false;
@@ -403,6 +477,17 @@ function DashboardPage({ user, onLogout }) {
         .includes(normalizedSearch),
     );
   }, [userSearch, users]);
+  const filteredManagedTopics = useMemo(() => {
+    const normalizedSearch = topicSearch.trim().toLowerCase();
+
+    return topics.filter((topic) =>
+      [topic.name, topic.keywords]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase()
+        .includes(normalizedSearch),
+    );
+  }, [topicSearch, topics]);
   const comparedSchools = useMemo(
     () =>
       sortPrimaryUniversityFirst(schools).sort(
@@ -435,6 +520,195 @@ function DashboardPage({ user, onLogout }) {
 
     return { strongest, weakest, mostNegative, mostDiscussed };
   }, [schools]);
+  const eventItems = useMemo(
+    () =>
+      recentItems
+        .filter((item) => item.is_event)
+        .sort((firstItem, secondItem) => {
+          const firstDate = new Date(firstItem.post_date || firstItem.classified_at || 0).getTime();
+          const secondDate = new Date(secondItem.post_date || secondItem.classified_at || 0).getTime();
+
+          return secondDate - firstDate;
+        }),
+    [recentItems],
+  );
+  const filteredEventItems = useMemo(
+    () => {
+      const now = Date.now();
+      const dayMs = 24 * 60 * 60 * 1000;
+      const timeframeDays = {
+        "7d": 7,
+        "30d": 30,
+        "90d": 90,
+      }[eventTimeframe];
+
+      return eventItems.filter((item) => {
+        const matchesUniversity =
+          eventUniversityFilter === "all" ||
+          String(item.university_id) === String(eventUniversityFilter);
+        const value = item.post_date || item.classified_at;
+        const itemTime = value ? new Date(value).getTime() : null;
+        const matchesTimeframe =
+          !timeframeDays || (itemTime !== null && now - itemTime <= timeframeDays * dayMs);
+
+        return matchesUniversity && matchesTimeframe;
+      });
+    },
+    [eventItems, eventTimeframe, eventUniversityFilter],
+  );
+  const eventStats = useMemo(() => {
+    const byUniversity = new Map();
+    const byTopic = new Map();
+    const sentimentCounts = new Map();
+
+    filteredEventItems.forEach((item) => {
+      const university = item.university || "Unknown";
+      const topic = formatTopicName(item.topic);
+      const label = item.label || "unknown";
+
+      byUniversity.set(university, (byUniversity.get(university) || 0) + 1);
+      byTopic.set(topic, (byTopic.get(topic) || 0) + 1);
+      sentimentCounts.set(label, (sentimentCounts.get(label) || 0) + 1);
+    });
+
+    const topUniversity = [...byUniversity.entries()].sort((a, b) => b[1] - a[1])[0];
+    const topTopic = [...byTopic.entries()].sort((a, b) => b[1] - a[1])[0];
+    const dominantSentiment = [...sentimentCounts.entries()].sort((a, b) => b[1] - a[1])[0];
+
+    return {
+      total: filteredEventItems.length,
+      topUniversity,
+      topTopic,
+      dominantSentiment,
+    };
+  }, [filteredEventItems]);
+  const eventLineData = useMemo(() => {
+    const buckets = new Map();
+
+    filteredEventItems.forEach((item) => {
+      const value = item.post_date || item.classified_at;
+      const date = value ? new Date(value) : new Date(0);
+      const key = date.toISOString().slice(0, 10);
+      const bucket = buckets.get(key) || {
+        label: date.toLocaleDateString(undefined, { month: "short", day: "numeric" }),
+        positive: 0,
+        neutral: 0,
+        negative: 0,
+      };
+      const label = item.label || "neutral";
+
+      if (label === "positive") {
+        bucket.positive += 1;
+      } else if (label === "negative") {
+        bucket.negative += 1;
+      } else {
+        bucket.neutral += 1;
+      }
+
+      buckets.set(key, bucket);
+    });
+
+    const sortedBuckets = [...buckets.entries()]
+      .sort(([firstDate], [secondDate]) => firstDate.localeCompare(secondDate))
+      .map(([, bucket]) => bucket);
+
+    return {
+      labels: sortedBuckets.map((bucket) => bucket.label),
+      datasets: [
+        {
+          label: "Positive",
+          data: sortedBuckets.map((bucket) => bucket.positive),
+          borderColor: "#16a34a",
+          backgroundColor: "rgba(22, 163, 74, 0.14)",
+          pointBackgroundColor: "#16a34a",
+          fill: true,
+        },
+        {
+          label: "Neutral",
+          data: sortedBuckets.map((bucket) => bucket.neutral),
+          borderColor: "#facc15",
+          backgroundColor: "rgba(250, 204, 21, 0.16)",
+          pointBackgroundColor: "#facc15",
+        },
+        {
+          label: "Negative",
+          data: sortedBuckets.map((bucket) => bucket.negative),
+          borderColor: "#dc2626",
+          backgroundColor: "rgba(220, 38, 38, 0.1)",
+          pointBackgroundColor: "#dc2626",
+        },
+      ].map((dataset) => ({
+        ...dataset,
+        borderWidth: 2,
+        pointBorderColor: "#ffffff",
+        pointBorderWidth: 2,
+        pointRadius: 4,
+        pointHoverRadius: 5,
+        tension: 0.35,
+      })),
+    };
+  }, [filteredEventItems]);
+  const eventLineOptions = useMemo(
+    () => ({
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: {
+        intersect: false,
+        mode: "index",
+      },
+      plugins: {
+        legend: {
+          position: "top",
+          align: "end",
+          labels: {
+            boxWidth: 10,
+            boxHeight: 10,
+            color: "#66736a",
+            font: {
+              size: 11,
+              family: "inherit",
+            },
+            usePointStyle: true,
+          },
+        },
+        tooltip: {
+          callbacks: {
+            label: (context) => `${context.dataset.label}: ${context.parsed.y} events`,
+          },
+        },
+      },
+      scales: {
+        x: {
+          grid: {
+            display: false,
+          },
+          ticks: {
+            color: "#17231c",
+          },
+        },
+        y: {
+          beginAtZero: true,
+          ticks: {
+            color: "#66736a",
+            precision: 0,
+          },
+          grid: {
+            color: "#edf1ed",
+          },
+        },
+      },
+    }),
+    [],
+  );
+  const eventTotalPages = Math.max(
+    1,
+    Math.ceil(filteredEventItems.length / EVENT_PAGE_SIZE),
+  );
+  const activeEventPage = Math.min(eventPage, eventTotalPages);
+  const paginatedEventItems = filteredEventItems.slice(
+    (activeEventPage - 1) * EVENT_PAGE_SIZE,
+    activeEventPage * EVENT_PAGE_SIZE,
+  );
   const compareChartData = useMemo(() => {
     const topicTotals = new Map();
 
@@ -631,38 +905,117 @@ function DashboardPage({ user, onLogout }) {
   const updateReportFilter = (setter, value) => {
     setter(value);
   };
-  const downloadReportCsv = () => {
+  const buildReportRows = () => [
+    ["University", "Topic", "Sentiment", "Source", "Date", "Author", "Summary"],
+    ...filteredReportItems.map((item) => [
+      item.university || "Unknown",
+      formatTopicName(item.topic),
+      item.label || "Unknown",
+      formatSourceName(item.source || item.source_type),
+      formatDetailDate(item.post_date || item.classified_at),
+      item.author || "Unknown",
+      item.summary || item.content || "",
+    ]),
+  ];
+  const escapeCsvValue = (value) => {
+    const text = String(value ?? "");
+    return `"${text.replace(/"/g, '""')}"`;
+  };
+  const escapeHtmlValue = (value) =>
+    String(value ?? "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;");
+  const buildReportHtml = () => {
+    const rows = buildReportRows();
+    const headerCells = rows[0]
+      .map((cell) => `<th>${escapeHtmlValue(cell)}</th>`)
+      .join("");
+    const bodyRows = rows
+      .slice(1)
+      .map(
+        (row) =>
+          `<tr>${row.map((cell) => `<td>${escapeHtmlValue(cell)}</td>`).join("")}</tr>`,
+      )
+      .join("");
+
+    return `<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>UniPulse Report</title>
+    <style>
+      body { font-family: Arial, sans-serif; color: #17231c; }
+      h1 { font-size: 22px; margin-bottom: 4px; }
+      p { color: #5f6f66; margin-top: 0; }
+      table { width: 100%; border-collapse: collapse; font-size: 12px; }
+      th, td { border: 1px solid #d8e0da; padding: 8px; text-align: left; vertical-align: top; }
+      th { background: #054425; color: #ffffff; }
+    </style>
+  </head>
+  <body>
+    <h1>UniPulse Report</h1>
+    <p>Generated ${new Date().toLocaleString()} - ${filteredReportItems.length} records</p>
+    <table>
+      <thead><tr>${headerCells}</tr></thead>
+      <tbody>${bodyRows}</tbody>
+    </table>
+  </body>
+</html>`;
+  };
+  const downloadBlob = (content, type, fileName) => {
+    const blob = new Blob([content], { type });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+
+    link.href = url;
+    link.download = fileName;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+  const downloadReport = () => {
     if (!filteredReportItems.length) {
       setError("No report data matches the selected filters.");
       return;
     }
 
-    const escapeCsvValue = (value) => {
-      const text = String(value ?? "");
-      return `"${text.replace(/"/g, '""')}"`;
-    };
-    const rows = [
-      ["University", "Topic", "Sentiment", "Source", "Date", "Author", "Summary"],
-      ...filteredReportItems.map((item) => [
-        item.university || "Unknown",
-        formatTopicName(item.topic),
-        item.label || "Unknown",
-        formatSourceName(item.source || item.source_type),
-        formatDetailDate(item.post_date || item.classified_at),
-        item.author || "Unknown",
-        item.summary || item.content || "",
-      ]),
-    ];
-    const csvContent = rows.map((row) => row.map(escapeCsvValue).join(",")).join("\n");
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
+    const today = new Date().toISOString().slice(0, 10);
 
-    link.href = url;
-    link.download = `unipulse-report-${new Date().toISOString().slice(0, 10)}.csv`;
-    link.click();
-    URL.revokeObjectURL(url);
-    setNotice("Report downloaded successfully.");
+    if (reportFormat === "word") {
+      downloadBlob(
+        buildReportHtml(),
+        "application/msword;charset=utf-8;",
+        `unipulse-report-${today}.doc`,
+      );
+      setNotice("Word report downloaded successfully.");
+      return;
+    }
+
+    if (reportFormat === "pdf") {
+      const pdfHtml = buildReportHtml().replace(
+        "</body>",
+        "<script>window.addEventListener('load', function () { setTimeout(function () { window.print(); }, 300); });</script></body>",
+      );
+      const pdfBlob = new Blob([pdfHtml], { type: "text/html;charset=utf-8;" });
+      const pdfUrl = URL.createObjectURL(pdfBlob);
+      const printWindow = window.open(pdfUrl, "_blank");
+
+      if (!printWindow) {
+        URL.revokeObjectURL(pdfUrl);
+        setError("Allow pop-ups to generate the PDF report.");
+        return;
+      }
+
+      setTimeout(() => URL.revokeObjectURL(pdfUrl), 60000);
+      setNotice("PDF report opened. Choose Save as PDF in the print dialog.");
+      return;
+    }
+
+    const csvContent = buildReportRows().map((row) => row.map(escapeCsvValue).join(",")).join("\n");
+    downloadBlob(csvContent, "text/csv;charset=utf-8;", `unipulse-report-${today}.csv`);
+    setNotice("CSV report downloaded successfully.");
   };
 
   const schoolAccents = ["violet", "green", "gold"];
@@ -895,7 +1248,7 @@ function DashboardPage({ user, onLogout }) {
       setSelectedDetailItem(null);
     }
   };
-  const removePostFromDashboard = (postId) => {
+  const removePostFromDashboard = (postId, universityId = selectedDetailItem?.university_id) => {
     setDashboard((currentDashboard) => {
       if (!currentDashboard) {
         return currentDashboard;
@@ -909,7 +1262,7 @@ function DashboardPage({ user, onLogout }) {
         universities: (currentDashboard.universities || []).map((school) => ({
           ...school,
           items:
-            String(school.id) === String(selectedDetailItem?.university_id)
+            String(school.id) === String(universityId)
               ? Math.max((school.items || 0) - 1, 0)
               : school.items,
           topics: (school.topics || []).map((topic) => ({
@@ -929,10 +1282,31 @@ function DashboardPage({ user, onLogout }) {
 
     try {
       await dashboardApi.deletePost(selectedDetailItem.post_id);
-      removePostFromDashboard(selectedDetailItem.post_id);
+      removePostFromDashboard(selectedDetailItem.post_id, selectedDetailItem.university_id);
       setSelectedDetailItem(null);
     } catch (deleteError) {
       setError(deleteError.message || "Could not delete the selected item.");
+    } finally {
+      setIsDeletingItem(false);
+    }
+  };
+  const handleDeleteEvent = async (item) => {
+    const shouldDelete = window.confirm(`Delete this event from ${item.university || "this university"}?`);
+
+    if (!shouldDelete) {
+      return;
+    }
+
+    setIsDeletingItem(true);
+    setError("");
+    setNotice("");
+
+    try {
+      await dashboardApi.deletePost(item.post_id);
+      removePostFromDashboard(item.post_id, item.university_id);
+      setNotice("Event deleted successfully.");
+    } catch (deleteError) {
+      setError(deleteError.message || "Could not delete the selected event.");
     } finally {
       setIsDeletingItem(false);
     }
@@ -1064,12 +1438,42 @@ function DashboardPage({ user, onLogout }) {
   const openUserModal = () => {
     setError("");
     setNotice("");
+    setSelectedUser(null);
+    setUserModalMode("create");
     resetUserForm();
+    setIsUserModalOpen(true);
+  };
+  const openViewUserModal = (targetUser) => {
+    setError("");
+    setNotice("");
+    setSelectedUser(targetUser);
+    setUserModalMode("view");
+    setUserForm({
+      name: targetUser.name,
+      email: targetUser.email,
+      password: "",
+      role: targetUser.role,
+    });
+    setIsUserModalOpen(true);
+  };
+  const openEditUserModal = (targetUser) => {
+    setError("");
+    setNotice("");
+    setSelectedUser(targetUser);
+    setUserModalMode("edit");
+    setUserForm({
+      name: targetUser.name,
+      email: targetUser.email,
+      password: "",
+      role: targetUser.role,
+    });
     setIsUserModalOpen(true);
   };
   const closeUserModal = () => {
     if (!isSavingUser) {
       setIsUserModalOpen(false);
+      setSelectedUser(null);
+      setUserModalMode("create");
       resetUserForm();
     }
   };
@@ -1079,15 +1483,14 @@ function DashboardPage({ user, onLogout }) {
       [field]: value,
     }));
   };
-  const handleCreateUser = async (event) => {
+  const handleSubmitUser = async (event) => {
     event.preventDefault();
 
     const name = userForm.name.trim();
     const email = userForm.email.trim();
-    const password = userForm.password.trim();
 
-    if (!name || !email || !password) {
-      setError("Name, email, and password are required.");
+    if (!name || !email || !userForm.role) {
+      setError("Name, email, and role are required.");
       return;
     }
 
@@ -1096,36 +1499,52 @@ function DashboardPage({ user, onLogout }) {
     setNotice("");
 
     try {
-      await userApi.create({
-        name,
-        email,
-        password,
-        role: userForm.role,
-      });
-      const data = await userApi.list();
-      setUsers(data);
-      setNotice(`${name} was added successfully.`);
+      if (userModalMode === "edit" && selectedUser) {
+        const updatedUser = await userApi.update(selectedUser.id, {
+          name,
+          email,
+          role: userForm.role,
+        });
+        setUsers((currentUsers) =>
+          currentUsers.map((appUser) =>
+            appUser.id === selectedUser.id
+              ? {
+                  ...appUser,
+                  name: updatedUser.name,
+                  email: updatedUser.email,
+                  role: updatedUser.role,
+                }
+              : appUser,
+          ),
+        );
+        if (selectedUser.id === user?.id) {
+          onUserChange?.({
+            ...user,
+            name: updatedUser.name,
+            email: updatedUser.email,
+            role: updatedUser.role,
+          });
+        }
+        setNotice(`${name} was updated successfully.`);
+      } else {
+        const createdUser = await userApi.create({
+          name,
+          email,
+          role: userForm.role,
+        });
+        const data = await userApi.list();
+        setUsers(data);
+        setNotice(
+          createdUser.email_sent
+            ? `${name} was invited successfully.`
+            : `${name} was created. Email is not configured, so the setup link was printed in the backend terminal.`,
+        );
+      }
       closeUserModal();
     } catch (userError) {
-      setError(userError.message || "Could not create user.");
+      setError(userError.message || "Could not save user.");
     } finally {
       setIsSavingUser(false);
-    }
-  };
-  const handleUpdateUserRole = async (targetUserId, role) => {
-    setError("");
-    setNotice("");
-
-    try {
-      await userApi.updateRole(targetUserId, role);
-      setUsers((currentUsers) =>
-        currentUsers.map((appUser) =>
-          appUser.id === targetUserId ? { ...appUser, role } : appUser,
-        ),
-      );
-      setNotice("User role updated successfully.");
-    } catch (userError) {
-      setError(userError.message || "Could not update user role.");
     }
   };
   const handleDeleteUser = async (targetUser) => {
@@ -1154,6 +1573,122 @@ function DashboardPage({ user, onLogout }) {
       setIsDeletingUser(false);
     }
   };
+  const isViewingUser = userModalMode === "view";
+  const userModalTitle =
+    userModalMode === "edit" ? "Edit User" : userModalMode === "view" ? "User Details" : "Add User";
+  const userModalSubmitLabel = isSavingUser ? "Saving..." : userModalMode === "edit" ? "Save" : "Add";
+  const resetTopicForm = () => {
+    setTopicForm({
+      name: "",
+      keywords: "",
+    });
+  };
+  const openTopicModal = () => {
+    setError("");
+    setNotice("");
+    setSelectedManagedTopic(null);
+    setTopicModalMode("create");
+    resetTopicForm();
+    setIsTopicModalOpen(true);
+  };
+  const openViewTopicModal = (targetTopic) => {
+    setError("");
+    setNotice("");
+    setSelectedManagedTopic(targetTopic);
+    setTopicModalMode("view");
+    setTopicForm({
+      name: targetTopic.name,
+      keywords: targetTopic.keywords || "",
+    });
+    setIsTopicModalOpen(true);
+  };
+  const openEditTopicModal = (targetTopic) => {
+    setError("");
+    setNotice("");
+    setSelectedManagedTopic(targetTopic);
+    setTopicModalMode("edit");
+    setTopicForm({
+      name: targetTopic.name,
+      keywords: targetTopic.keywords || "",
+    });
+    setIsTopicModalOpen(true);
+  };
+  const closeTopicModal = () => {
+    if (!isSavingTopic) {
+      setIsTopicModalOpen(false);
+      setSelectedManagedTopic(null);
+      setTopicModalMode("create");
+      resetTopicForm();
+    }
+  };
+  const handleTopicFormChange = (field, value) => {
+    setTopicForm((currentForm) => ({
+      ...currentForm,
+      [field]: value,
+    }));
+  };
+  const handleSubmitTopic = async (event) => {
+    event.preventDefault();
+
+    const name = topicForm.name.trim();
+    const keywords = topicForm.keywords.trim();
+
+    if (!name || !keywords) {
+      setError("Topic name and keywords are required.");
+      return;
+    }
+
+    setIsSavingTopic(true);
+    setError("");
+    setNotice("");
+
+    try {
+      if (topicModalMode === "edit" && selectedManagedTopic) {
+        await topicApi.update(selectedManagedTopic.id, { name, keywords });
+        setTopics((currentTopics) =>
+          currentTopics.map((topic) =>
+            topic.id === selectedManagedTopic.id ? { ...topic, name, keywords } : topic,
+          ),
+        );
+        setNotice(`${name} was updated successfully.`);
+      } else {
+        await topicApi.create({ name, keywords });
+        const data = await topicApi.list();
+        setTopics(data);
+        setNotice(`${name} was created successfully.`);
+      }
+      closeTopicModal();
+    } catch (topicError) {
+      setError(topicError.message || "Could not save topic.");
+    } finally {
+      setIsSavingTopic(false);
+    }
+  };
+  const handleDeleteTopic = async (targetTopic) => {
+    const shouldDelete = window.confirm(`Delete ${targetTopic.name}?`);
+
+    if (!shouldDelete) {
+      return;
+    }
+
+    setIsDeletingTopic(true);
+    setError("");
+    setNotice("");
+
+    try {
+      await topicApi.delete(targetTopic.id);
+      setTopics((currentTopics) => currentTopics.filter((topic) => topic.id !== targetTopic.id));
+      setNotice(`${targetTopic.name} was deleted successfully.`);
+    } catch (topicError) {
+      setError(topicError.message || "Could not delete topic.");
+    } finally {
+      setIsDeletingTopic(false);
+    }
+  };
+  const isViewingTopic = topicModalMode === "view";
+  const topicModalTitle =
+    topicModalMode === "edit" ? "Edit Topic" : topicModalMode === "view" ? "Topic Details" : "Add Topic";
+  const topicModalSubmitLabel = isSavingTopic ? "Saving..." : topicModalMode === "edit" ? "Save" : "Add";
 
   return (
     <main className="dashboard-shell">
@@ -1163,7 +1698,7 @@ function DashboardPage({ user, onLogout }) {
         </div>
 
         <nav className="sidebar-nav" aria-label="Dashboard navigation">
-          {navGroups.map((group) => (
+          {visibleNavGroups.map((group) => (
             <section key={group.label} className="nav-group">
               <p>{group.label}</p>
               {group.items.map((item) => {
@@ -1205,10 +1740,14 @@ function DashboardPage({ user, onLogout }) {
                   ? "Analysed posts"
                 : activePage === "compare"
                   ? "University comparison"
-                  : activePage === "reports"
-                    ? "Export reports"
-                    : activePage === "users"
-                      ? "User administration"
+                : activePage === "events"
+                  ? "Flagged activities"
+                : activePage === "reports"
+                  ? "Export reports"
+                  : activePage === "topics"
+                    ? "Topic administration"
+                  : activePage === "users"
+                    ? "User administration"
                   : "All institutions"}
             </p>
             <h1>
@@ -1218,10 +1757,14 @@ function DashboardPage({ user, onLogout }) {
                   ? "Sentiment"
                 : activePage === "compare"
                   ? "Compare"
-                  : activePage === "reports"
-                    ? "Reports"
-                    : activePage === "users"
-                      ? "Users"
+                : activePage === "events"
+                  ? "Events"
+                : activePage === "reports"
+                  ? "Reports"
+                  : activePage === "topics"
+                    ? "Topics"
+                  : activePage === "users"
+                    ? "Users"
                   : "University sentiment overview"}
             </h1>
             <span>
@@ -1231,11 +1774,15 @@ function DashboardPage({ user, onLogout }) {
                   ? `${filteredSentimentItems.length} analysed posts found`
                 : activePage === "compare"
                   ? "Compare sentiment, volume, and topics between universities"
-                  : activePage === "reports"
-                    ? `${filteredReportItems.length} records ready for export`
-                    : activePage === "users"
-                      ? `${filteredUsers.length} users listed`
-                : `Showing ${dashboard?.totals?.active_universities || 0} active universities - ${
+                : activePage === "events"
+                  ? `${filteredEventItems.length} event-related records found`
+                : activePage === "reports"
+                  ? `${filteredReportItems.length} records ready for export`
+                  : activePage === "topics"
+                    ? `${filteredManagedTopics.length} topics listed`
+                  : activePage === "users"
+                    ? `${filteredUsers.length} users listed`
+                  : `Showing ${dashboard?.totals?.active_universities || 0} active universities - ${
                     dashboard?.totals?.sentiment_results || 0
                   } analysed items`}
             </span>
@@ -1246,7 +1793,7 @@ function DashboardPage({ user, onLogout }) {
               <span>{user?.name || "Admin"}</span>
               <strong>{user?.role || "admin"}</strong>
             </div>
-            {activePage === "universities" && (
+            {activePage === "universities" && isAdmin && (
               <button type="button" className="add-school-button" onClick={openAddUniversityModal}>
                 <Plus size={16} />
                 <span>Add school</span>
@@ -1256,6 +1803,12 @@ function DashboardPage({ user, onLogout }) {
               <button type="button" className="add-school-button" onClick={openUserModal}>
                 <Plus size={16} />
                 <span>Add user</span>
+              </button>
+            )}
+            {activePage === "topics" && isAdmin && (
+              <button type="button" className="add-school-button" onClick={openTopicModal}>
+                <Plus size={16} />
+                <span>Add topic</span>
               </button>
             )}
           </div>
@@ -1664,24 +2217,28 @@ function DashboardPage({ user, onLogout }) {
                             >
                               <Eye size={16} />
                             </button>
-                            <button
-                              type="button"
-                              aria-label={`Edit ${school.name}`}
-                              title="Edit"
-                              onClick={() => openUniversityModal("edit", school)}
-                            >
-                              <Pencil size={16} />
-                            </button>
-                            <button
-                              type="button"
-                              className="is-danger"
-                              aria-label={`Delete ${school.name}`}
-                              title="Delete"
-                              onClick={() => handleDeleteUniversity(school)}
-                              disabled={isDeletingUniversity}
-                            >
-                              <Trash2 size={16} />
-                            </button>
+                            {isAdmin && (
+                              <>
+                                <button
+                                  type="button"
+                                  aria-label={`Edit ${school.name}`}
+                                  title="Edit"
+                                  onClick={() => openUniversityModal("edit", school)}
+                                >
+                                  <Pencil size={16} />
+                                </button>
+                                <button
+                                  type="button"
+                                  className="is-danger"
+                                  aria-label={`Delete ${school.name}`}
+                                  title="Delete"
+                                  onClick={() => handleDeleteUniversity(school)}
+                                  disabled={isDeletingUniversity}
+                                >
+                                  <Trash2 size={16} />
+                                </button>
+                              </>
+                            )}
                           </div>
                         </td>
                       </tr>
@@ -2007,6 +2564,178 @@ function DashboardPage({ user, onLogout }) {
           </section>
         )}
 
+        {activePage === "events" && (
+          <section className="reports-page" aria-label="Events">
+            <section className="event-filter-panel">
+              <label>
+                <span>University</span>
+                <select
+                  value={eventUniversityFilter}
+                  onChange={(event) => setEventUniversityFilter(event.target.value)}
+                >
+                  <option value="all">All universities</option>
+                  {schools.map((school) => (
+                    <option key={school.id} value={String(school.id)}>
+                      {school.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                <span>Time frame</span>
+                <select
+                  value={eventTimeframe}
+                  onChange={(event) => setEventTimeframe(event.target.value)}
+                >
+                  <option value="all">All time</option>
+                  <option value="7d">Last 7 days</option>
+                  <option value="30d">Last 30 days</option>
+                  <option value="90d">Last 90 days</option>
+                </select>
+              </label>
+            </section>
+
+            <section className="school-grid event-summary-grid">
+              <article className="school-card accent-green">
+                <div>
+                  <h2>Flagged events</h2>
+                  <p>Detected from analysed posts</p>
+                </div>
+                <strong>{eventStats.total}</strong>
+                <span>Total events</span>
+              </article>
+              <article className="school-card accent-violet">
+                <div>
+                  <h2>Leading university</h2>
+                  <p>{eventStats.topUniversity?.[0] || "No event data"}</p>
+                </div>
+                <strong>{eventStats.topUniversity?.[1] || 0}</strong>
+                <span>Event items</span>
+              </article>
+              <article className="school-card accent-gold">
+                <div>
+                  <h2>Main topic</h2>
+                  <p>{eventStats.topTopic?.[0] || "No event data"}</p>
+                </div>
+                <strong>{eventStats.topTopic?.[1] || 0}</strong>
+                <span>Mentions</span>
+              </article>
+            </section>
+
+            <section className="compare-chart-panel">
+              <div className="universities-table-header">
+                <div>
+                  <h2>Events over time</h2>
+                  <p>Positive, neutral, and negative event volume for the selected time frame.</p>
+                </div>
+              </div>
+              <div className="chart-canvas event-chart" aria-label="Events over time line chart">
+                {eventLineData.labels.length ? (
+                  <Line data={eventLineData} options={eventLineOptions} />
+                ) : (
+                  <p className="empty-recent">No event chart data is available for this selection.</p>
+                )}
+              </div>
+            </section>
+
+            <section className="report-panel">
+              <div className="universities-table-header">
+                <div>
+                  <h2>Event timeline</h2>
+                  <p>Posts classified as institutional updates, activities, or event-related items.</p>
+                </div>
+              </div>
+
+              <div className="event-timeline">
+                {paginatedEventItems.map((item) => (
+                  <article key={item.post_id} className="event-item">
+                    <div className="event-date">
+                      <strong>{formatDetailDate(item.post_date || item.classified_at)}</strong>
+                      <span>{item.label || "unknown"}</span>
+                    </div>
+                    <div className="event-content">
+                      <div className="event-main-row">
+                        <div>
+                          <h3>{item.university || "Unknown university"}</h3>
+                          <p>{item.summary || item.content || "No event summary available"}</p>
+                        </div>
+                        <div className="event-actions">
+                          <button
+                            type="button"
+                            aria-label="View event details"
+                            title="View"
+                            onClick={() => setSelectedDetailItem(item)}
+                          >
+                            <Eye size={16} />
+                          </button>
+                          {isAdmin && (
+                            <button
+                              type="button"
+                              className="is-danger"
+                              aria-label="Delete event"
+                              title="Delete"
+                              onClick={() => handleDeleteEvent(item)}
+                              disabled={isDeletingItem}
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                      <div className="recent-meta">
+                        <em>{formatTopicName(item.topic)}</em>
+                        <em>{formatSourceName(item.source || item.source_type)}</em>
+                        {item.url && (
+                          <a
+                            href={item.url}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="event-source-link"
+                            aria-label="Open original event source"
+                            title="Open original source"
+                          >
+                            <ExternalLink size={14} />
+                          </a>
+                        )}
+                      </div>
+                    </div>
+                  </article>
+                ))}
+                {!filteredEventItems.length && (
+                  <p className="empty-recent">No events have been detected yet.</p>
+                )}
+              </div>
+              {filteredEventItems.length > 0 && (
+                <div className="sentiment-pagination">
+                  <span>
+                    Page {activeEventPage} of {eventTotalPages}
+                  </span>
+                  <div>
+                    <button
+                      type="button"
+                      onClick={() => setEventPage((page) => Math.max(1, page - 1))}
+                      disabled={activeEventPage === 1}
+                      aria-label="Previous events page"
+                      title="Previous page"
+                    >
+                      <ChevronLeft size={18} />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setEventPage((page) => Math.min(eventTotalPages, page + 1))}
+                      disabled={activeEventPage === eventTotalPages}
+                      aria-label="Next events page"
+                      title="Next page"
+                    >
+                      <ChevronRight size={18} />
+                    </button>
+                  </div>
+                </div>
+              )}
+            </section>
+          </section>
+        )}
+
         {activePage === "reports" && (
           <section className="reports-page" aria-label="Reports">
             <section className="report-panel">
@@ -2097,7 +2826,18 @@ function DashboardPage({ user, onLogout }) {
                       onChange={(event) => updateReportFilter(setReportEndDate, event.target.value)}
                     />
                   </label>
-                  <button type="button" className="report-download-button" onClick={downloadReportCsv}>
+                  <label>
+                    <span>Format</span>
+                    <select
+                      value={reportFormat}
+                      onChange={(event) => setReportFormat(event.target.value)}
+                    >
+                      <option value="csv">CSV / Excel</option>
+                      <option value="word">Word</option>
+                      <option value="pdf">PDF</option>
+                    </select>
+                  </label>
+                  <button type="button" className="report-download-button" onClick={downloadReport}>
                     Download report
                   </button>
                 </div>
@@ -2131,6 +2871,93 @@ function DashboardPage({ user, onLogout }) {
                 )}
               </div>
             </section>
+          </section>
+        )}
+
+        {activePage === "topics" && (
+          <section className="users-page" aria-label="Topics">
+            <>
+                <section className="users-toolbar">
+                  <label className="university-search">
+                    <Search size={16} />
+                    <input
+                      type="search"
+                      value={topicSearch}
+                      onChange={(event) => setTopicSearch(event.target.value)}
+                      placeholder="Search topics by name or keywords"
+                    />
+                  </label>
+                </section>
+
+                <section className="universities-table-panel">
+                  <div className="universities-table-header">
+                    <div>
+                      <h2>Topic rules</h2>
+                      <p>{isLoadingTopics ? "Loading topics..." : `${filteredManagedTopics.length} topics found`}</p>
+                    </div>
+                  </div>
+
+                  <div className="universities-table-wrap">
+                    <table className="users-table topics-table">
+                      <thead>
+                        <tr>
+                          <th>Name</th>
+                          <th>Keywords</th>
+                          {isAdmin && <th className="actions-heading">Actions</th>}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {filteredManagedTopics.map((topic) => (
+                          <tr key={topic.id}>
+                            <td>{topic.name}</td>
+                            <td>
+                              <span className="sentiment-ellipsis" title={topic.keywords || ""}>
+                                {topic.keywords || "No keywords"}
+                              </span>
+                            </td>
+                            {isAdmin && (
+                              <td className="universities-actions-cell">
+                                <div className="universities-actions">
+                                  <button
+                                    type="button"
+                                    aria-label={`View ${topic.name}`}
+                                    title="View"
+                                    onClick={() => openViewTopicModal(topic)}
+                                  >
+                                    <Eye size={16} />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    aria-label={`Edit ${topic.name}`}
+                                    title="Edit"
+                                    onClick={() => openEditTopicModal(topic)}
+                                  >
+                                    <Pencil size={16} />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    className="is-danger"
+                                    aria-label={`Delete ${topic.name}`}
+                                    title="Delete"
+                                    onClick={() => handleDeleteTopic(topic)}
+                                    disabled={isDeletingTopic}
+                                  >
+                                    <Trash2 size={16} />
+                                  </button>
+                                </div>
+                              </td>
+                            )}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {!filteredManagedTopics.length && !isLoadingTopics && (
+                    <p className="empty-recent">No topics match your search.</p>
+                  )}
+                </section>
+              </>
           </section>
         )}
 
@@ -2175,21 +3002,25 @@ function DashboardPage({ user, onLogout }) {
                           <tr key={appUser.id}>
                             <td>{appUser.name}</td>
                             <td>{appUser.email}</td>
-                            <td>
-                              <select
-                                className="role-select"
-                                value={appUser.role}
-                                onChange={(event) =>
-                                  handleUpdateUserRole(appUser.id, event.target.value)
-                                }
-                              >
-                                <option value="admin">Admin</option>
-                                <option value="analyst">Analyst</option>
-                                <option value="viewer">Viewer</option>
-                              </select>
-                            </td>
+                            <td className="user-role-cell">{appUser.role}</td>
                             <td className="universities-actions-cell">
                               <div className="universities-actions">
+                                <button
+                                  type="button"
+                                  aria-label={`View ${appUser.name}`}
+                                  title="View"
+                                  onClick={() => openViewUserModal(appUser)}
+                                >
+                                  <Eye size={16} />
+                                </button>
+                                <button
+                                  type="button"
+                                  aria-label={`Edit ${appUser.name}`}
+                                  title="Edit"
+                                  onClick={() => openEditUserModal(appUser)}
+                                >
+                                  <Pencil size={16} />
+                                </button>
                                 <button
                                   type="button"
                                   className="is-danger"
@@ -2217,6 +3048,64 @@ function DashboardPage({ user, onLogout }) {
           </section>
         )}
 
+        {isTopicModalOpen && (
+          <div className="detail-modal-backdrop" role="presentation" onMouseDown={closeTopicModal}>
+            <section
+              className="detail-modal university-modal"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="topic-modal-title"
+              onMouseDown={(event) => event.stopPropagation()}
+            >
+              <header className="detail-modal-header">
+                <h2 id="topic-modal-title">{topicModalTitle}</h2>
+                <button type="button" onClick={closeTopicModal} aria-label="Close details">
+                  <X size={20} />
+                </button>
+              </header>
+
+              <form onSubmit={handleSubmitTopic}>
+                <div className="detail-modal-body">
+                  <label className="university-form-field">
+                    <span>Name</span>
+                    <input
+                      type="text"
+                      value={topicForm.name}
+                      onChange={(event) => handleTopicFormChange("name", event.target.value)}
+                      disabled={isSavingTopic || isViewingTopic}
+                    />
+                  </label>
+                  <label className="university-form-field">
+                    <span>Keywords</span>
+                    <textarea
+                      value={topicForm.keywords}
+                      onChange={(event) => handleTopicFormChange("keywords", event.target.value)}
+                      disabled={isSavingTopic || isViewingTopic}
+                      placeholder="tuition, school fees, cost"
+                    />
+                  </label>
+                </div>
+
+                <footer className="detail-modal-actions">
+                  <button
+                    type="button"
+                    className="cancel-detail-button"
+                    onClick={closeTopicModal}
+                    disabled={isSavingTopic}
+                  >
+                    {isViewingTopic ? "Close" : "Cancel"}
+                  </button>
+                  {!isViewingTopic && (
+                    <button type="submit" className="edit-university-button" disabled={isSavingTopic}>
+                      {topicModalSubmitLabel}
+                    </button>
+                  )}
+                </footer>
+              </form>
+            </section>
+          </div>
+        )}
+
         {isUserModalOpen && (
           <div className="detail-modal-backdrop" role="presentation" onMouseDown={closeUserModal}>
             <section
@@ -2227,13 +3116,13 @@ function DashboardPage({ user, onLogout }) {
               onMouseDown={(event) => event.stopPropagation()}
             >
               <header className="detail-modal-header">
-                <h2 id="user-modal-title">Add User</h2>
+                <h2 id="user-modal-title">{userModalTitle}</h2>
                 <button type="button" onClick={closeUserModal} aria-label="Close details">
                   <X size={20} />
                 </button>
               </header>
 
-              <form onSubmit={handleCreateUser}>
+              <form onSubmit={handleSubmitUser}>
                 <div className="detail-modal-body">
                   <label className="university-form-field">
                     <span>Name</span>
@@ -2241,7 +3130,7 @@ function DashboardPage({ user, onLogout }) {
                       type="text"
                       value={userForm.name}
                       onChange={(event) => handleUserFormChange("name", event.target.value)}
-                      disabled={isSavingUser}
+                      disabled={isSavingUser || isViewingUser}
                     />
                   </label>
                   <label className="university-form-field">
@@ -2250,16 +3139,7 @@ function DashboardPage({ user, onLogout }) {
                       type="email"
                       value={userForm.email}
                       onChange={(event) => handleUserFormChange("email", event.target.value)}
-                      disabled={isSavingUser}
-                    />
-                  </label>
-                  <label className="university-form-field">
-                    <span>Password</span>
-                    <input
-                      type="password"
-                      value={userForm.password}
-                      onChange={(event) => handleUserFormChange("password", event.target.value)}
-                      disabled={isSavingUser}
+                      disabled={isSavingUser || isViewingUser}
                     />
                   </label>
                   <label className="university-form-field">
@@ -2267,7 +3147,7 @@ function DashboardPage({ user, onLogout }) {
                     <select
                       value={userForm.role}
                       onChange={(event) => handleUserFormChange("role", event.target.value)}
-                      disabled={isSavingUser}
+                      disabled={isSavingUser || isViewingUser}
                     >
                       <option value="admin">Admin</option>
                       <option value="analyst">Analyst</option>
@@ -2283,11 +3163,13 @@ function DashboardPage({ user, onLogout }) {
                     onClick={closeUserModal}
                     disabled={isSavingUser}
                   >
-                    Cancel
+                    {isViewingUser ? "Close" : "Cancel"}
                   </button>
-                  <button type="submit" className="edit-university-button" disabled={isSavingUser}>
-                    {isSavingUser ? "Saving..." : "Add"}
-                  </button>
+                  {!isViewingUser && (
+                    <button type="submit" className="edit-university-button" disabled={isSavingUser}>
+                      {userModalSubmitLabel}
+                    </button>
+                  )}
                 </footer>
               </form>
             </section>
@@ -2366,13 +3248,15 @@ function DashboardPage({ user, onLogout }) {
                     >
                       Close
                     </button>
-                    <button
-                      type="button"
-                      className="edit-university-button"
-                      onClick={() => setUniversityModalMode("edit")}
-                    >
-                      Edit
-                    </button>
+                    {isAdmin && (
+                      <button
+                        type="button"
+                        className="edit-university-button"
+                        onClick={() => setUniversityModalMode("edit")}
+                      >
+                        Edit
+                      </button>
+                    )}
                   </footer>
                 </>
               ) : (

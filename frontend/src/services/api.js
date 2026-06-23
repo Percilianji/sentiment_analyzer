@@ -38,6 +38,11 @@ export const authApi = {
       method: "POST",
       body: JSON.stringify(credentials),
     }),
+  setupPassword: (payload) =>
+    request("/auth/setup-password", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
 };
 
 export const dashboardApi = {
@@ -70,6 +75,24 @@ export const universityApi = {
     }),
 };
 
+export const topicApi = {
+  list: () => request("/topics/"),
+  create: (topic) =>
+    request("/topics/", {
+      method: "POST",
+      body: JSON.stringify(topic),
+    }),
+  update: (topicId, topic) =>
+    request(`/topics/${topicId}`, {
+      method: "PUT",
+      body: JSON.stringify(topic),
+    }),
+  delete: (topicId) =>
+    request(`/topics/${topicId}`, {
+      method: "DELETE",
+    }),
+};
+
 export const userApi = {
   list: () => request("/users/"),
   create: (user) =>
@@ -81,6 +104,11 @@ export const userApi = {
     request(`/users/${userId}/role`, {
       method: "PUT",
       body: JSON.stringify({ role }),
+    }),
+  update: (userId, user) =>
+    request(`/users/${userId}`, {
+      method: "PUT",
+      body: JSON.stringify(user),
     }),
   delete: (userId) =>
     request(`/users/${userId}`, {

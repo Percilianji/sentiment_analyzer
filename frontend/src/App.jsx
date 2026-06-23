@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import DashboardPage from "./pages/Dashboard/DashboardPage";
 import LoginPage from "./pages/Login/LoginPage";
+import SetupPasswordPage from "./pages/Login/SetupPasswordPage";
 
 function App() {
   const [user, setUser] = useState(() => {
@@ -13,6 +14,10 @@ function App() {
     localStorage.removeItem("unipulse_user");
     setUser(null);
   };
+  const handleUserChange = (updatedUser) => {
+    localStorage.setItem("unipulse_user", JSON.stringify(updatedUser));
+    setUser(updatedUser);
+  };
 
   useEffect(() => {
     window.addEventListener("unipulse:session-expired", handleLogout);
@@ -23,7 +28,19 @@ function App() {
   }, []);
 
   if (user) {
-    return <DashboardPage user={user} onLogout={handleLogout} />;
+    return <DashboardPage user={user} onLogout={handleLogout} onUserChange={handleUserChange} />;
+  }
+
+  if (window.location.pathname === "/setup-password") {
+    return (
+      <SetupPasswordPage
+        onComplete={() => {
+          window.history.replaceState({}, "", "/");
+          sessionStorage.setItem("unipulse_login_notice", "Password set. Please sign in.");
+          window.location.reload();
+        }}
+      />
+    );
   }
 
   return <LoginPage onLogin={setUser} />;
