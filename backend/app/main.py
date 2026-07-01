@@ -14,6 +14,7 @@ from app.scraping.scheduler import start_scheduler
 from app.scraping.routes import scraping_bp
 from app.nlp.routes import nlp_bp
 from app.dashboard.routes import dashboard_bp
+from app.chat.routes import chat_bp
 
 
 app = Flask(__name__)
@@ -30,6 +31,7 @@ app.register_blueprint(topics_bp, url_prefix="/topics")
 app.register_blueprint( scraping_bp, url_prefix="/scraping")
 app.register_blueprint(nlp_bp, url_prefix="/nlp")
 app.register_blueprint(dashboard_bp, url_prefix="/dashboard")
+app.register_blueprint(chat_bp, url_prefix="/chat")
 
 
 with app.app_context():

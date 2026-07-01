@@ -30,12 +30,37 @@ XLM_LABEL_MAP = {
     "5 stars": "positive",
 }
 
-EVENT_KEYWORDS = [
-    "election", "announcement", "inauguration", "policy", "protest",
-    "launch", "strike", "award", "appointment", "resignation",
-    "scandal", "ceremony", "agreement", "funding", "grant",
-    "accreditation", "ranking", "closure",
-]
+EVENT_KEYWORD_GROUPS = {
+    "campus action or disruption": [
+        "protest", "strike", "demonstration", "boycott", "riot", "unrest",
+    ],
+    "official announcement or policy update": [
+        "announcement", "policy", "notice", "circular", "memo", "appointment",
+        "resignation", "election",
+    ],
+    "academic calendar or student milestone": [
+        "exam", "exams", "registration", "deadline", "admission", "orientation",
+        "matriculation", "graduation", "convocation", "resumption",
+    ],
+    "institutional event or ceremony": [
+        "launch", "inauguration", "ceremony", "conference", "workshop", "seminar",
+        "meeting",
+    ],
+    "reputation, partnership, or funding update": [
+        "award", "agreement", "funding", "grant", "accreditation", "ranking",
+        "partnership",
+    ],
+    "safety, scandal, or emergency issue": [
+        "scandal", "closure", "shutdown", "attack", "fire", "accident", "security",
+        "emergency", "crisis",
+    ],
+}
+
+EVENT_KEYWORDS = sorted({
+    keyword
+    for keywords in EVENT_KEYWORD_GROUPS.values()
+    for keyword in keywords
+})
 
 def run_vader(text: str) -> float:
     return analyzer.polarity_scores(text)["compound"]
@@ -118,9 +143,24 @@ def resolve_label(vader_score: float, xlm_label: str | None = None) -> str:
 
     return xlm_label
 
-def detect_event(text: str) -> bool:
+def event_matches(text: str) -> list[str]:
     text_lower = text.lower()
-    return any(keyword in text_lower for keyword in EVENT_KEYWORDS)
+    return [keyword for keyword in EVENT_KEYWORDS if keyword in text_lower]
+
+def event_match_groups(text: str) -> list[tuple[str, list[str]]]:
+    text_lower = text.lower()
+    groups = []
+
+    for group, keywords in EVENT_KEYWORD_GROUPS.items():
+        matches = [keyword for keyword in keywords if keyword in text_lower]
+
+        if matches:
+            groups.append((group, matches))
+
+    return groups
+
+def detect_event(text: str) -> bool:
+    return bool(event_matches(text))
 
 def compute_sentiment_index(university_id: int) -> float:
     university = University.query.get(university_id)

@@ -9,6 +9,7 @@ from app.database.database import db
 from app.database.models import Post, SentimentResult, Summary, Topic, University
 from app.auth.decorators import admin_required
 from app.nlp.topic_classifier import DEFAULT_TOPIC_KEYWORDS
+from app.nlp.sentiment import event_match_groups
 
 
 dashboard_bp = Blueprint("dashboard", __name__)
@@ -66,6 +67,37 @@ def weekday_label(value):
             return None
 
     return value.strftime("%a")
+
+
+def event_reason(post, sentiment, summary_text=None):
+    if not sentiment.is_event:
+        return None
+
+    searchable_text = " ".join(
+        value
+        for value in [
+            post.topic,
+            post.content,
+            summary_text,
+        ]
+        if value
+    )
+    groups = event_match_groups(searchable_text)
+
+    if groups:
+        group, matches = groups[0]
+        return (
+            f"Flagged as a {group} because the text mentions "
+            f"{', '.join(matches[:4])}."
+        )
+
+    topic = clean_topic(post.topic) or "Unclassified"
+
+    return (
+        f"Low-confidence event flag: the NLP pipeline stored this as event-related under "
+        f"{topic}, but the current text does not contain a recognized event keyword. "
+        f"Verify the source before treating it as an event."
+    )
 
 
 @dashboard_bp.route("/overview", methods=["GET"])
@@ -195,6 +227,11 @@ def overview():
                     "topic": topic,
                     "label": sentiment.final_label,
                     "is_event": sentiment.is_event,
+                    "event_reason": event_reason(
+                        post,
+                        sentiment,
+                        summaries_by_post_id.get(post.id),
+                    ),
                     "summary": summaries_by_post_id.get(post.id) or post.content[:180],
                     "content": post.content,
                 })
@@ -238,7 +275,8 @@ def overview():
             weak_topics.append(
                 sorted(
                     counted_topic_items,
-                    key=lambda item: (item["positive_percent"], -item["negative_percent"], -item["items"]),
+                    key=lambda item: (item["negative_percent"], item["items"], -item["positive_percent"]),
+                    reverse=True,
                 )[0]
             )
 
@@ -275,6 +313,11 @@ def overview():
             "topic": clean_topic(post.topic) or "Unclassified",
             "label": sentiment.final_label,
             "is_event": sentiment.is_event,
+            "event_reason": event_reason(
+                post,
+                sentiment,
+                summary.summary_text if summary else None,
+            ),
             "summary": summary.summary_text if summary else post.content[:180],
             "content": post.content,
         })
