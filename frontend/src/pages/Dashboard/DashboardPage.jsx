@@ -11,32 +11,31 @@ import {
   PointElement,
   Tooltip,
 } from "chart.js";
-import { Bar, Doughnut, Line } from "react-chartjs-2";
 import {
   BarChart3,
   Check,
-  ChevronDown,
-  ChevronLeft,
-  ChevronRight,
   FileText,
   Gauge,
-  Eye,
-  ExternalLink,
   LayoutDashboard,
   LogOut,
-  MoreVertical,
-  Pencil,
   Plus,
-  Search,
   School,
   Settings,
   Tags,
   TrendingDown,
-  Trash2,
   Users,
   X,
 } from "lucide-react";
 import logo from "../../assets/unipulse-logo.png";
+import ChatAssistant from "../../components/ChatAssistant/ChatAssistant";
+import OverviewFeature from "./features/Overview/OverviewFeature";
+import UniversitiesFeature from "./features/Universities/UniversitiesFeature";
+import SentimentFeature from "./features/Sentiment/SentimentFeature";
+import CompareFeature from "./features/Compare/CompareFeature";
+import EventsFeature from "./features/Events/EventsFeature";
+import ReportsFeature from "./features/Reports/ReportsFeature";
+import TopicsFeature from "./features/Topics/TopicsFeature";
+import UsersFeature from "./features/Users/UsersFeature";
 import { dashboardApi, topicApi, universityApi, userApi } from "../../services/api";
 import "./DashboardPage.css";
 
@@ -237,7 +236,7 @@ function DashboardPage({ user, onLogout, onUserChange }) {
       navGroups
         .map((group) => ({
           ...group,
-          items: group.items.filter((item) => group.label !== "Admin" || isAdmin),
+          items: group.items.filter(() => group.label !== "Admin" || isAdmin),
         }))
         .filter((group) => group.items.length),
     [isAdmin],
@@ -339,12 +338,18 @@ function DashboardPage({ user, onLogout, onUserChange }) {
 
   useEffect(() => {
     if (!isAdmin && activePage === "users") {
-      setActivePage("overview");
+      const timer = window.setTimeout(() => setActivePage("overview"), 0);
+
+      return () => window.clearTimeout(timer);
     }
+
+    return undefined;
   }, [activePage, isAdmin]);
 
   useEffect(() => {
-    setEventPage(1);
+    const timer = window.setTimeout(() => setEventPage(1), 0);
+
+    return () => window.clearTimeout(timer);
   }, [eventTimeframe, eventUniversityFilter]);
 
   useEffect(() => {
@@ -534,7 +539,7 @@ function DashboardPage({ user, onLogout, onUserChange }) {
   );
   const filteredEventItems = useMemo(
     () => {
-      const now = Date.now();
+      const now = new Date().getTime();
       const dayMs = 24 * 60 * 60 * 1000;
       const timeframeDays = {
         "7d": 7,
@@ -1690,6 +1695,128 @@ function DashboardPage({ user, onLogout, onUserChange }) {
     topicModalMode === "edit" ? "Edit Topic" : topicModalMode === "view" ? "Topic Details" : "Add Topic";
   const topicModalSubmitLabel = isSavingTopic ? "Saving..." : topicModalMode === "edit" ? "Save" : "Add";
 
+  const featureProps = {
+    activeEventPage,
+    activeSentimentPage,
+    activeTopic,
+    compareChartData,
+    compareChartOptions,
+    compareChartRef,
+    compareValueLabelsPlugin,
+    compareLeaders,
+    comparedSchools,
+    downloadChartPng,
+    downloadReport,
+    eventLineData,
+    eventLineOptions,
+    eventStats,
+    eventTimeframe,
+    eventTotalPages,
+    eventUniversityFilter,
+    filteredEventItems,
+    filteredManagedTopics,
+    filteredRecentItems,
+    filteredReportItems,
+    filteredSentimentItems,
+    filteredUsers,
+    formatDetailDate,
+    formatSourceName,
+    formatTopicName,
+    formattedTopTopics,
+    formattedWeakTopics,
+    handleDeleteEvent,
+    handleDeleteTopic,
+    handleDeleteUniversity,
+    handleDeleteUser,
+    isAdmin,
+    isDeletingItem,
+    isDeletingTopic,
+    isDeletingUniversity,
+    isDeletingUser,
+    isLoadingTopics,
+    isLoadingUsers,
+    isTopicMenuOpen,
+    isUniversityMenuOpen,
+    mixChartData,
+    mixChartOptions,
+    openChartMenu,
+    openEditTopicModal,
+    openEditUserModal,
+    openUniversityModal,
+    openViewTopicModal,
+    openViewUserModal,
+    overviewChart,
+    overviewMixChartRef,
+    overviewTrendChartRef,
+    paginatedEventItems,
+    paginatedSentimentItems,
+    primarySchool,
+    primaryTopTopic,
+    reportEndDate,
+    reportFormat,
+    reportLabelFilter,
+    reportSourceFilter,
+    reportStartDate,
+    reportTopicFilter,
+    reportUniversityFilter,
+    schoolAccents,
+    schools,
+    selectedTopicData,
+    selectedUniversityId,
+    sentimentFilterOptions,
+    sentimentLabelFilter,
+    sentimentPageEnd,
+    sentimentPageStart,
+    sentimentSearch,
+    sentimentSourceFilter,
+    sentimentTotalPages,
+    sentimentTopicFilter,
+    sentimentUniversityFilter,
+    setEventPage,
+    setEventTimeframe,
+    setEventUniversityFilter,
+    setActivePage,
+    setIsTopicMenuOpen,
+    setIsUniversityMenuOpen,
+    setOpenChartMenu,
+    setOverviewChart,
+    setReportEndDate,
+    setReportFormat,
+    setReportLabelFilter,
+    setReportSourceFilter,
+    setReportStartDate,
+    setReportTopicFilter,
+    setReportUniversityFilter,
+    setSelectedDetailItem,
+    setSelectedTopic,
+    setSelectedUniversityId,
+    setSentimentLabelFilter,
+    setSentimentPage,
+    setSentimentSearch,
+    setSentimentSourceFilter,
+    setSentimentTopicFilter,
+    setSentimentUniversityFilter,
+    setShowAllRecent,
+    setTopicSearch,
+    setUniversitySearch,
+    setUniversitySort,
+    setUserSearch,
+    showAllRecent,
+    sortedUniversities,
+    topicOptions,
+    topicSearch,
+    trendChartData,
+    trendChartOptions,
+    universitySearch,
+    universitySort,
+    universityStats,
+    user,
+    userSearch,
+    updateReportFilter,
+    updateSentimentFilter,
+    visibleRecentItems,
+  };
+
   return (
     <main className="dashboard-shell">
       <aside className="dashboard-sidebar">
@@ -1829,1224 +1956,21 @@ function DashboardPage({ user, onLogout, onUserChange }) {
         )}
         {isLoading && <p className="dashboard-loading">Loading dashboard data...</p>}
 
-        {activePage === "overview" && (
-          <>
-        <section className="school-grid" aria-label="School sentiment cards">
-          {schools.map((school, index) => (
-            <article
-              className={`school-card accent-${schoolAccents[index % schoolAccents.length]}`}
-              key={school.id}
-            >
-              <div>
-                <h2>{school.name}</h2>
-                <p>
-                  {school.items} items - live database
-                </p>
-              </div>
-              <strong>{Math.round(school.sentiment_index)}</strong>
-              <span>Sentiment index</span>
-              <div className="mini-mix">
-                <em>{school.positive_percent}% positive</em>
-                <em>{school.negative_percent}% negative</em>
-                <em>{school.neutral_percent}% neutral</em>
-              </div>
-            </article>
-          ))}
-        </section>
+        {activePage === "overview" && <OverviewFeature {...featureProps} />}
 
-        <section className="insight-grid">
-          <article className="insight-card">
-            <h3>Top topic by school</h3>
-            {formattedTopTopics.map((item) => (
-              <p key={`${item.university}-${item.topic}`}>
-                {item.university} - {item.topic} <strong>{item.positive_percent}% pos</strong>
-              </p>
-            ))}
-          </article>
-          <article className="insight-card">
-            <h3>Weakest topic by school</h3>
-            {formattedWeakTopics.map((item) => (
-              <p key={`${item.university}-${item.topic}`}>
-                {item.university} - {item.topic} <strong>{item.positive_percent}% positive</strong>
-              </p>
-            ))}
-          </article>
-        </section>
+        {activePage === "universities" && <UniversitiesFeature {...featureProps} />}
 
-        <section className="school-detail">
-          <div className="detail-title-row">
-            <div>
-              <div className="detail-school-select">
-                <h2>{primarySchool?.name || "No university selected"}</h2>
-                <div className="university-menu">
-                  <button
-                    type="button"
-                    className="university-menu-trigger"
-                    onClick={() => setIsUniversityMenuOpen((open) => !open)}
-                    aria-expanded={isUniversityMenuOpen}
-                    aria-haspopup="listbox"
-                    aria-label="Choose university"
-                    title="Choose university"
-                  >
-                    <ChevronDown size={18} />
-                  </button>
+        {activePage === "sentiment" && <SentimentFeature {...featureProps} />}
 
-                  {isUniversityMenuOpen && (
-                    <div className="university-menu-list" role="listbox">
-                      {schools.map((school) => (
-                        <button
-                          type="button"
-                          key={school.id}
-                          className={
-                            String(school.id) === String(selectedUniversityId)
-                              ? "is-selected"
-                              : ""
-                          }
-                          onClick={() => {
-                            setSelectedUniversityId(String(school.id));
-                            setSelectedTopic("");
-                            setShowAllRecent(false);
-                            setIsUniversityMenuOpen(false);
-                            setIsTopicMenuOpen(false);
-                          }}
-                          role="option"
-                          aria-selected={String(school.id) === String(selectedUniversityId)}
-                        >
-                          {school.name}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-              <p>{primarySchool?.items || 0} analysed items</p>
-            </div>
-            <div className="detail-index">
-              <strong>{Math.round(primarySchool?.sentiment_index || 0)}</strong>
-              <span>Sentiment index</span>
-            </div>
-          </div>
+        {activePage === "compare" && <CompareFeature {...featureProps} />}
 
-          <div className="sentiment-breakdown">
-            <div className="breakdown-tile positive">
-              <span>Positive</span>
-              <strong>{primarySchool?.positive_percent || 0}%</strong>
-              <p>Current share</p>
-            </div>
-            <div className="breakdown-tile negative">
-              <span>Negative</span>
-              <strong>{primarySchool?.negative_percent || 0}%</strong>
-              <p>Current share</p>
-            </div>
-            <div className="breakdown-tile neutral">
-              <span>Neutral</span>
-              <strong>{primarySchool?.neutral_percent || 0}%</strong>
-              <p>Current share</p>
-            </div>
-          </div>
+        {activePage === "events" && <EventsFeature {...featureProps} />}
 
-          <article className="topic-panel">
-            <div className="topic-selector">
-                <span>Topic</span>
-                <div className="topic-menu">
-                  <button
-                    type="button"
-                    className="topic-menu-trigger"
-                    onClick={() => setIsTopicMenuOpen((open) => !open)}
-                    aria-expanded={isTopicMenuOpen}
-                    aria-haspopup="listbox"
-                  >
-                    <span>{formatTopicName(selectedTopicData?.topic || activeTopic)}</span>
-                    <ChevronDown size={18} />
-                  </button>
-                </div>
-              <p>{selectedTopicData?.positive_percent || primaryTopTopic?.positive_percent || 0}% positive</p>
-            </div>
+        {activePage === "reports" && <ReportsFeature {...featureProps} />}
 
-            {isTopicMenuOpen && (
-              <div className="topic-menu-list" role="listbox">
-                {topicOptions.length ? (
-                  topicOptions.map((topic) => (
-                    <button
-                      type="button"
-                      key={topic.topic}
-                      className={topic.topic === activeTopic ? "is-selected" : ""}
-                      onClick={() => {
-                        setSelectedTopic(topic.topic);
-                        setShowAllRecent(false);
-                        setIsTopicMenuOpen(false);
-                      }}
-                      role="option"
-                      aria-selected={topic.topic === activeTopic}
-                    >
-                      {formatTopicName(topic.topic)}
-                    </button>
-                  ))
-                ) : (
-                  <span>No topics available</span>
-                )}
-              </div>
-            )}
+        {activePage === "topics" && <TopicsFeature {...featureProps} />}
 
-            <div className="topic-bars">
-              <div>
-                <span>Positive</span>
-                <i style={{ "--value": `${selectedTopicData?.positive_percent || 0}%` }} />
-                <em>{selectedTopicData?.positive_percent || 0}%</em>
-              </div>
-              <div>
-                <span>Negative</span>
-                <i style={{ "--value": `${selectedTopicData?.negative_percent || 0}%` }} />
-                <em>{selectedTopicData?.negative_percent || 0}%</em>
-              </div>
-              <div>
-                <span>Neutral</span>
-                <i style={{ "--value": `${selectedTopicData?.neutral_percent || 0}%` }} />
-                <em>{selectedTopicData?.neutral_percent || 0}%</em>
-              </div>
-            </div>
-
-            <section className="chart-panel chart-panel-wide overview-chart-panel">
-                <div className="chart-heading">
-                  <div>
-                    <h3>{overviewChart === "trend" ? "Sentiment trend" : "Current mix"}</h3>
-                    <p>
-                      {overviewChart === "trend"
-                        ? `${formatTopicName(selectedTopicData?.topic || activeTopic)} over the last 7 days`
-                        : `${selectedTopicData?.items || 0} analysed items in this topic`}
-                    </p>
-                  </div>
-                  <label className="chart-select">
-                    <span>Chart</span>
-                    <select
-                      value={overviewChart}
-                      onChange={(event) => setOverviewChart(event.target.value)}
-                    >
-                      <option value="trend">Sentiment trend</option>
-                      <option value="mix">Current mix</option>
-                    </select>
-                  </label>
-                  <div className="chart-menu">
-                    <button
-                      type="button"
-                      className="chart-menu-trigger"
-                      onClick={() =>
-                        setOpenChartMenu((menu) => (menu === "overview" ? "" : "overview"))
-                      }
-                      aria-label="Chart options"
-                      title="Chart options"
-                    >
-                      <MoreVertical size={18} />
-                    </button>
-                    {openChartMenu === "overview" && (
-                      <div className="chart-menu-list">
-                        <button
-                          type="button"
-                          onClick={() =>
-                            downloadChartPng(
-                              overviewChart === "trend" ? overviewTrendChartRef : overviewMixChartRef,
-                              `overview-${overviewChart}.png`,
-                            )
-                          }
-                        >
-                          Download PNG
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                </div>
-                <div
-                  className={`chart-canvas ${overviewChart === "trend" ? "trend-chart" : "mix-chart"}`}
-                  aria-label={overviewChart === "trend" ? "Positive, negative, and neutral trend" : "Current sentiment mix"}
-                >
-                  {overviewChart === "trend" ? (
-                    <Line ref={overviewTrendChartRef} data={trendChartData} options={trendChartOptions} />
-                  ) : (
-                    <Doughnut ref={overviewMixChartRef} data={mixChartData} options={mixChartOptions} />
-                  )}
-                </div>
-              </section>
-          </article>
-
-          <article className="recent-panel">
-            <div className="recent-heading">
-              <h3>Recent items</h3>
-              {filteredRecentItems.length > 5 && (
-                <button type="button" onClick={() => setShowAllRecent((current) => !current)}>
-                  {showAllRecent ? "Show less" : "See more"}
-                </button>
-              )}
-            </div>
-            <div className="recent-list">
-              {visibleRecentItems.length ? (
-                visibleRecentItems.map((item) => (
-                  <button
-                    type="button"
-                    className="recent-item"
-                    key={item.post_id}
-                    onClick={() => setSelectedDetailItem(item)}
-                  >
-                    <div className="recent-meta">
-                      <strong>{item.author}</strong>
-                      <span>{formatSourceName(item.source || item.source_type)}</span>
-                      <em className={item.label}>{item.label}</em>
-                      <em>{item.topic}</em>
-                    </div>
-                    <p>{item.summary}</p>
-                  </button>
-                ))
-              ) : (
-                <p className="empty-recent">
-                  No recent items for {formatTopicName(activeTopic)} yet.
-                </p>
-              )}
-            </div>
-          </article>
-        </section>
-          </>
-        )}
-
-        {activePage === "universities" && (
-          <section className="universities-page" aria-label="Universities page">
-            <div className="universities-summary-grid">
-              <article className="university-summary-tile">
-                <span>Active universities</span>
-                <strong>{schools.length}</strong>
-                <p>Institutions currently tracked</p>
-              </article>
-              <article className="university-summary-tile">
-                <span>Analysed items</span>
-                <strong>{universityStats.totalItems}</strong>
-                <p>Total sentiment records</p>
-              </article>
-              <article className="university-summary-tile">
-                <span>Average sentiment</span>
-                <strong>{Math.round(universityStats.averageSentiment)}</strong>
-                <p>Mean index across universities</p>
-              </article>
-              <article className="university-summary-tile">
-                <span>Needs attention</span>
-                <strong>{universityStats.needsAttention?.negative_percent || 0}%</strong>
-                <p>{universityStats.needsAttention?.name || "No university data"}</p>
-              </article>
-            </div>
-
-            <section className="universities-toolbar">
-              <label className="university-search">
-                <Search size={16} />
-                <input
-                  type="search"
-                  value={universitySearch}
-                  onChange={(event) => setUniversitySearch(event.target.value)}
-                  placeholder="Search universities"
-                />
-              </label>
-              <label className="university-sort">
-                <span>Sort</span>
-                <select
-                  value={universitySort}
-                  onChange={(event) => setUniversitySort(event.target.value)}
-                >
-                  <option value="sentiment">Sentiment index</option>
-                  <option value="items">Analysed items</option>
-                  <option value="negative">Negative share</option>
-                  <option value="name">Name</option>
-                </select>
-              </label>
-            </section>
-
-            <section className="universities-table-panel">
-              <div className="universities-table-header">
-                <h2>University performance</h2>
-                <p>
-                  {universityStats.strongestSchool?.name || "No university"} has the highest sentiment index.
-                </p>
-              </div>
-
-              <div className="universities-table-wrap">
-                <table className="universities-table">
-                  <thead>
-                    <tr>
-                      <th>University</th>
-                      <th>Items</th>
-                      <th>Sentiment index</th>
-                      <th>Positive</th>
-                      <th>Negative</th>
-                      <th>Neutral</th>
-                      <th className="actions-heading">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {sortedUniversities.map((school) => (
-                      <tr key={school.id}>
-                        <td>
-                          <button
-                            type="button"
-                            className="university-name-button"
-                            onClick={() => {
-                              setSelectedUniversityId(String(school.id));
-                              setSelectedTopic("");
-                              setShowAllRecent(false);
-                              setActivePage("overview");
-                            }}
-                          >
-                            <span>{school.name}</span>
-                            <em>Open overview</em>
-                          </button>
-                        </td>
-                        <td>{school.items || 0}</td>
-                        <td>
-                          <strong>{Math.round(school.sentiment_index || 0)}</strong>
-                        </td>
-                        <td>
-                          <span className="metric-pill positive">{school.positive_percent || 0}%</span>
-                        </td>
-                        <td>
-                          <span className="metric-pill negative">{school.negative_percent || 0}%</span>
-                        </td>
-                        <td>
-                          <span className="metric-pill neutral">{school.neutral_percent || 0}%</span>
-                        </td>
-                        <td className="universities-actions-cell">
-                          <div className="universities-actions">
-                            <button
-                              type="button"
-                              aria-label={`View ${school.name}`}
-                              title="View"
-                              onClick={() => openUniversityModal("view", school)}
-                            >
-                              <Eye size={16} />
-                            </button>
-                            {isAdmin && (
-                              <>
-                                <button
-                                  type="button"
-                                  aria-label={`Edit ${school.name}`}
-                                  title="Edit"
-                                  onClick={() => openUniversityModal("edit", school)}
-                                >
-                                  <Pencil size={16} />
-                                </button>
-                                <button
-                                  type="button"
-                                  className="is-danger"
-                                  aria-label={`Delete ${school.name}`}
-                                  title="Delete"
-                                  onClick={() => handleDeleteUniversity(school)}
-                                  disabled={isDeletingUniversity}
-                                >
-                                  <Trash2 size={16} />
-                                </button>
-                              </>
-                            )}
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-
-              {!sortedUniversities.length && (
-                <p className="empty-recent">No universities match your search.</p>
-              )}
-            </section>
-          </section>
-        )}
-
-        {activePage === "sentiment" && (
-          <section className="sentiment-page" aria-label="Sentiment analysed posts">
-            <section className="sentiment-toolbar">
-              <label className="sentiment-search">
-                <Search size={16} />
-                <input
-                  type="search"
-                  value={sentimentSearch}
-                  onChange={(event) => updateSentimentFilter(setSentimentSearch, event.target.value)}
-                  placeholder="Search summary, content, topic, university, source"
-                />
-              </label>
-
-              <div className="sentiment-filters">
-                <label>
-                  <span>University</span>
-                  <select
-                    value={sentimentUniversityFilter}
-                    onChange={(event) =>
-                      updateSentimentFilter(setSentimentUniversityFilter, event.target.value)
-                    }
-                  >
-                    <option value="all">All</option>
-                    {schools.map((school) => (
-                      <option key={school.id} value={String(school.id)}>
-                        {school.name}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-
-                <label>
-                  <span>Sentiment</span>
-                  <select
-                    value={sentimentLabelFilter}
-                    onChange={(event) =>
-                      updateSentimentFilter(setSentimentLabelFilter, event.target.value)
-                    }
-                  >
-                    <option value="all">All</option>
-                    <option value="positive">Positive</option>
-                    <option value="negative">Negative</option>
-                    <option value="neutral">Neutral</option>
-                  </select>
-                </label>
-
-                <label>
-                  <span>Topic</span>
-                  <select
-                    value={sentimentTopicFilter}
-                    onChange={(event) =>
-                      updateSentimentFilter(setSentimentTopicFilter, event.target.value)
-                    }
-                  >
-                    <option value="all">All</option>
-                    {sentimentFilterOptions.topics.map((topic) => (
-                      <option key={topic} value={topic}>
-                        {formatTopicName(topic)}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-
-                <label>
-                  <span>Source</span>
-                  <select
-                    value={sentimentSourceFilter}
-                    onChange={(event) =>
-                      updateSentimentFilter(setSentimentSourceFilter, event.target.value)
-                    }
-                  >
-                    <option value="all">All</option>
-                    {sentimentFilterOptions.sources.map((source) => (
-                      <option key={source} value={source}>
-                        {formatSourceName(source)}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              </div>
-            </section>
-
-            <section className="sentiment-table-panel">
-              <div className="universities-table-header">
-                <h2>Analysed posts</h2>
-                <p>
-                  Showing {sentimentPageStart}-{sentimentPageEnd} of{" "}
-                  {filteredSentimentItems.length}
-                </p>
-              </div>
-
-              <div className="universities-table-wrap">
-                <table className="sentiment-table">
-                  <thead>
-                    <tr>
-                      <th>Summary / content</th>
-                      <th>Sentiment</th>
-                      <th>Topic</th>
-                      <th>University</th>
-                      <th>Source</th>
-                      <th>Date</th>
-                      <th className="actions-heading">Action</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {paginatedSentimentItems.map((item) => (
-                      <tr key={item.post_id}>
-                        <td>
-                          <p className="sentiment-summary">
-                            {item.summary || item.content || "No summary available"}
-                          </p>
-                        </td>
-                        <td>
-                          <span className={`metric-pill ${item.label}`}>{item.label}</span>
-                        </td>
-                        <td>{formatTopicName(item.topic)}</td>
-                        <td>
-                          <span className="sentiment-ellipsis" title={item.university || "Unknown"}>
-                            {item.university || "Unknown"}
-                          </span>
-                        </td>
-                        <td>
-                          <span
-                            className="sentiment-ellipsis"
-                            title={formatSourceName(item.source || item.source_type)}
-                          >
-                            {formatSourceName(item.source || item.source_type)}
-                          </span>
-                        </td>
-                        <td>{formatDetailDate(item.post_date || item.classified_at)}</td>
-                        <td className="universities-actions-cell">
-                          <div className="universities-actions">
-                            <button
-                              type="button"
-                              aria-label="View post details"
-                              title="View details"
-                              onClick={() => setSelectedDetailItem(item)}
-                            >
-                              <Eye size={16} />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-
-              {!paginatedSentimentItems.length && (
-                <p className="empty-recent">No analysed posts match your filters.</p>
-              )}
-
-              <div className="sentiment-pagination">
-                <span>
-                  Page {activeSentimentPage} of {sentimentTotalPages}
-                </span>
-                <div>
-                  <button
-                    type="button"
-                    onClick={() => setSentimentPage((page) => Math.max(1, page - 1))}
-                    disabled={activeSentimentPage === 1}
-                    aria-label="Previous page"
-                    title="Previous page"
-                  >
-                    <ChevronLeft size={18} />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setSentimentPage((page) => Math.min(sentimentTotalPages, page + 1))
-                    }
-                    disabled={activeSentimentPage === sentimentTotalPages}
-                    aria-label="Next page"
-                    title="Next page"
-                  >
-                    <ChevronRight size={18} />
-                  </button>
-                </div>
-              </div>
-            </section>
-          </section>
-        )}
-
-        {activePage === "compare" && (
-          <section className="compare-page" aria-label="Compare universities">
-            <section className="compare-difference-grid">
-              <article className="compare-difference-tile">
-                <span>Highest index</span>
-                <strong>{Math.round(compareLeaders.strongest?.sentiment_index || 0)}</strong>
-                <p>{compareLeaders.strongest?.name || "No university data"}</p>
-              </article>
-              <article className="compare-difference-tile">
-                <span>Most discussed</span>
-                <strong>{compareLeaders.mostDiscussed?.items || 0}</strong>
-                <p>{compareLeaders.mostDiscussed?.name || "No university data"}</p>
-              </article>
-              <article className="compare-difference-tile">
-                <span>Highest negative</span>
-                <strong>{compareLeaders.mostNegative?.negative_percent || 0}%</strong>
-                <p>{compareLeaders.mostNegative?.name || "No university data"}</p>
-              </article>
-            </section>
-
-            <section className="compare-topic-panel">
-              <div className="universities-table-header">
-                <div>
-                  <h2>Topic sentiment graph</h2>
-                  <p>Positive sentiment by topic across all universities.</p>
-                </div>
-                <div className="chart-menu">
-                  <button
-                    type="button"
-                    className="chart-menu-trigger"
-                    onClick={() =>
-                      setOpenChartMenu((menu) => (menu === "compare" ? "" : "compare"))
-                    }
-                    aria-label="Chart options"
-                    title="Chart options"
-                  >
-                    <MoreVertical size={18} />
-                  </button>
-                  {openChartMenu === "compare" && (
-                    <div className="chart-menu-list">
-                      <button
-                        type="button"
-                        onClick={() => downloadChartPng(compareChartRef, "compare-topic-sentiment.png")}
-                      >
-                        Download PNG
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </div>
-              <div className="chart-canvas compare-topic-chart" aria-label="Topic sentiment comparison graph">
-                {compareChartData.labels.length ? (
-                  <Bar
-                    ref={compareChartRef}
-                    data={compareChartData}
-                    options={compareChartOptions}
-                    plugins={[compareValueLabelsPlugin]}
-                  />
-                ) : (
-                  <p className="empty-recent">No topic data is available for the graph yet.</p>
-                )}
-              </div>
-            </section>
-
-            <section className="compare-topic-panel">
-              <div className="universities-table-header">
-                <h2>All university comparison</h2>
-                <p>Ranked by sentiment index across every active university.</p>
-              </div>
-              <div className="universities-table-wrap">
-                <table className="compare-topic-table">
-                  <thead>
-                    <tr>
-                      <th>Rank</th>
-                      <th>University</th>
-                      <th>Items</th>
-                      <th>Index</th>
-                      <th>Positive</th>
-                      <th>Negative</th>
-                      <th>Neutral</th>
-                      <th>Strongest topic</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {comparedSchools.map((school, index) => {
-                      const strongestTopic = [...(school.topics || [])]
-                        .filter((topic) => topic.items)
-                        .sort(
-                          (firstTopic, secondTopic) =>
-                            (secondTopic.positive_percent || 0) - (firstTopic.positive_percent || 0),
-                        )[0];
-
-                      return (
-                      <tr key={school.id}>
-                        <td>{index + 1}</td>
-                        <td>
-                          <span className="sentiment-ellipsis" title={school.name}>
-                            {school.name}
-                          </span>
-                        </td>
-                        <td>{school.items || 0}</td>
-                        <td>
-                          <strong>{Math.round(school.sentiment_index || 0)}</strong>
-                        </td>
-                        <td>
-                          <span className="metric-pill positive">{school.positive_percent || 0}%</span>
-                        </td>
-                        <td>
-                          <span className="metric-pill negative">{school.negative_percent || 0}%</span>
-                        </td>
-                        <td>
-                          <span className="metric-pill neutral">{school.neutral_percent || 0}%</span>
-                        </td>
-                        <td>{formatTopicName(strongestTopic?.topic)}</td>
-                      </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-              {!comparedSchools.length && (
-                <p className="empty-recent">No universities are available to compare yet.</p>
-              )}
-            </section>
-          </section>
-        )}
-
-        {activePage === "events" && (
-          <section className="reports-page" aria-label="Events">
-            <section className="event-filter-panel">
-              <label>
-                <span>University</span>
-                <select
-                  value={eventUniversityFilter}
-                  onChange={(event) => setEventUniversityFilter(event.target.value)}
-                >
-                  <option value="all">All universities</option>
-                  {schools.map((school) => (
-                    <option key={school.id} value={String(school.id)}>
-                      {school.name}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label>
-                <span>Time frame</span>
-                <select
-                  value={eventTimeframe}
-                  onChange={(event) => setEventTimeframe(event.target.value)}
-                >
-                  <option value="all">All time</option>
-                  <option value="7d">Last 7 days</option>
-                  <option value="30d">Last 30 days</option>
-                  <option value="90d">Last 90 days</option>
-                </select>
-              </label>
-            </section>
-
-            <section className="school-grid event-summary-grid">
-              <article className="school-card accent-green">
-                <div>
-                  <h2>Flagged events</h2>
-                  <p>Detected from analysed posts</p>
-                </div>
-                <strong>{eventStats.total}</strong>
-                <span>Total events</span>
-              </article>
-              <article className="school-card accent-violet">
-                <div>
-                  <h2>Leading university</h2>
-                  <p>{eventStats.topUniversity?.[0] || "No event data"}</p>
-                </div>
-                <strong>{eventStats.topUniversity?.[1] || 0}</strong>
-                <span>Event items</span>
-              </article>
-              <article className="school-card accent-gold">
-                <div>
-                  <h2>Main topic</h2>
-                  <p>{eventStats.topTopic?.[0] || "No event data"}</p>
-                </div>
-                <strong>{eventStats.topTopic?.[1] || 0}</strong>
-                <span>Mentions</span>
-              </article>
-            </section>
-
-            <section className="compare-chart-panel">
-              <div className="universities-table-header">
-                <div>
-                  <h2>Events over time</h2>
-                  <p>Positive, neutral, and negative event volume for the selected time frame.</p>
-                </div>
-              </div>
-              <div className="chart-canvas event-chart" aria-label="Events over time line chart">
-                {eventLineData.labels.length ? (
-                  <Line data={eventLineData} options={eventLineOptions} />
-                ) : (
-                  <p className="empty-recent">No event chart data is available for this selection.</p>
-                )}
-              </div>
-            </section>
-
-            <section className="report-panel">
-              <div className="universities-table-header">
-                <div>
-                  <h2>Event timeline</h2>
-                  <p>Posts classified as institutional updates, activities, or event-related items.</p>
-                </div>
-              </div>
-
-              <div className="event-timeline">
-                {paginatedEventItems.map((item) => (
-                  <article key={item.post_id} className="event-item">
-                    <div className="event-date">
-                      <strong>{formatDetailDate(item.post_date || item.classified_at)}</strong>
-                      <span>{item.label || "unknown"}</span>
-                    </div>
-                    <div className="event-content">
-                      <div className="event-main-row">
-                        <div>
-                          <h3>{item.university || "Unknown university"}</h3>
-                          <p>{item.summary || item.content || "No event summary available"}</p>
-                        </div>
-                        <div className="event-actions">
-                          <button
-                            type="button"
-                            aria-label="View event details"
-                            title="View"
-                            onClick={() => setSelectedDetailItem(item)}
-                          >
-                            <Eye size={16} />
-                          </button>
-                          {isAdmin && (
-                            <button
-                              type="button"
-                              className="is-danger"
-                              aria-label="Delete event"
-                              title="Delete"
-                              onClick={() => handleDeleteEvent(item)}
-                              disabled={isDeletingItem}
-                            >
-                              <Trash2 size={16} />
-                            </button>
-                          )}
-                        </div>
-                      </div>
-                      <div className="recent-meta">
-                        <em>{formatTopicName(item.topic)}</em>
-                        <em>{formatSourceName(item.source || item.source_type)}</em>
-                        {item.url && (
-                          <a
-                            href={item.url}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="event-source-link"
-                            aria-label="Open original event source"
-                            title="Open original source"
-                          >
-                            <ExternalLink size={14} />
-                          </a>
-                        )}
-                      </div>
-                    </div>
-                  </article>
-                ))}
-                {!filteredEventItems.length && (
-                  <p className="empty-recent">No events have been detected yet.</p>
-                )}
-              </div>
-              {filteredEventItems.length > 0 && (
-                <div className="sentiment-pagination">
-                  <span>
-                    Page {activeEventPage} of {eventTotalPages}
-                  </span>
-                  <div>
-                    <button
-                      type="button"
-                      onClick={() => setEventPage((page) => Math.max(1, page - 1))}
-                      disabled={activeEventPage === 1}
-                      aria-label="Previous events page"
-                      title="Previous page"
-                    >
-                      <ChevronLeft size={18} />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setEventPage((page) => Math.min(eventTotalPages, page + 1))}
-                      disabled={activeEventPage === eventTotalPages}
-                      aria-label="Next events page"
-                      title="Next page"
-                    >
-                      <ChevronRight size={18} />
-                    </button>
-                  </div>
-                </div>
-              )}
-            </section>
-          </section>
-        )}
-
-        {activePage === "reports" && (
-          <section className="reports-page" aria-label="Reports">
-            <section className="report-panel">
-              <div className="universities-table-header">
-                <div>
-                  <h2>Report filters</h2>
-                  <p>Select the records to include, then download the report.</p>
-                </div>
-              </div>
-
-              <div className="report-form">
-                <div className="sentiment-filters">
-                  <label>
-                    <span>University</span>
-                    <select
-                      value={reportUniversityFilter}
-                      onChange={(event) =>
-                        updateReportFilter(setReportUniversityFilter, event.target.value)
-                      }
-                    >
-                      <option value="all">All</option>
-                      {schools.map((school) => (
-                        <option key={school.id} value={String(school.id)}>
-                          {school.name}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-
-                  <label>
-                    <span>Sentiment</span>
-                    <select
-                      value={reportLabelFilter}
-                      onChange={(event) => updateReportFilter(setReportLabelFilter, event.target.value)}
-                    >
-                      <option value="all">All</option>
-                      <option value="positive">Positive</option>
-                      <option value="negative">Negative</option>
-                      <option value="neutral">Neutral</option>
-                    </select>
-                  </label>
-
-                  <label>
-                    <span>Topic</span>
-                    <select
-                      value={reportTopicFilter}
-                      onChange={(event) => updateReportFilter(setReportTopicFilter, event.target.value)}
-                    >
-                      <option value="all">All</option>
-                      {sentimentFilterOptions.topics.map((topic) => (
-                        <option key={topic} value={topic}>
-                          {formatTopicName(topic)}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-
-                  <label>
-                    <span>Source</span>
-                    <select
-                      value={reportSourceFilter}
-                      onChange={(event) => updateReportFilter(setReportSourceFilter, event.target.value)}
-                    >
-                      <option value="all">All</option>
-                      {sentimentFilterOptions.sources.map((source) => (
-                        <option key={source} value={source}>
-                          {formatSourceName(source)}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                </div>
-
-                <div className="report-date-row">
-                  <label>
-                    <span>Start date</span>
-                    <input
-                      type="date"
-                      value={reportStartDate}
-                      onChange={(event) => updateReportFilter(setReportStartDate, event.target.value)}
-                    />
-                  </label>
-                  <label>
-                    <span>End date</span>
-                    <input
-                      type="date"
-                      value={reportEndDate}
-                      onChange={(event) => updateReportFilter(setReportEndDate, event.target.value)}
-                    />
-                  </label>
-                  <label>
-                    <span>Format</span>
-                    <select
-                      value={reportFormat}
-                      onChange={(event) => setReportFormat(event.target.value)}
-                    >
-                      <option value="csv">CSV / Excel</option>
-                      <option value="word">Word</option>
-                      <option value="pdf">PDF</option>
-                    </select>
-                  </label>
-                  <button type="button" className="report-download-button" onClick={downloadReport}>
-                    Download report
-                  </button>
-                </div>
-              </div>
-            </section>
-
-            <section className="report-panel">
-              <div className="universities-table-header">
-                <div>
-                  <h2>Report preview</h2>
-                  <p>{filteredReportItems.length} analysed posts match the selected filters.</p>
-                </div>
-              </div>
-              <div className="report-preview-list">
-                {filteredReportItems.slice(0, 5).map((item) => (
-                  <article key={item.post_id} className="report-preview-item">
-                    <div>
-                      <strong>{item.university || "Unknown"}</strong>
-                      <span>{formatDetailDate(item.post_date || item.classified_at)}</span>
-                    </div>
-                    <p>{item.summary || item.content || "No summary available"}</p>
-                    <div className="recent-meta">
-                      <em className={item.label}>{item.label}</em>
-                      <em>{formatTopicName(item.topic)}</em>
-                      <em>{formatSourceName(item.source || item.source_type)}</em>
-                    </div>
-                  </article>
-                ))}
-                {!filteredReportItems.length && (
-                  <p className="empty-recent">No records match the selected report filters.</p>
-                )}
-              </div>
-            </section>
-          </section>
-        )}
-
-        {activePage === "topics" && (
-          <section className="users-page" aria-label="Topics">
-            <>
-                <section className="users-toolbar">
-                  <label className="university-search">
-                    <Search size={16} />
-                    <input
-                      type="search"
-                      value={topicSearch}
-                      onChange={(event) => setTopicSearch(event.target.value)}
-                      placeholder="Search topics by name or keywords"
-                    />
-                  </label>
-                </section>
-
-                <section className="universities-table-panel">
-                  <div className="universities-table-header">
-                    <div>
-                      <h2>Topic rules</h2>
-                      <p>{isLoadingTopics ? "Loading topics..." : `${filteredManagedTopics.length} topics found`}</p>
-                    </div>
-                  </div>
-
-                  <div className="universities-table-wrap">
-                    <table className="users-table topics-table">
-                      <thead>
-                        <tr>
-                          <th>Name</th>
-                          <th>Keywords</th>
-                          {isAdmin && <th className="actions-heading">Actions</th>}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {filteredManagedTopics.map((topic) => (
-                          <tr key={topic.id}>
-                            <td>{topic.name}</td>
-                            <td>
-                              <span className="sentiment-ellipsis" title={topic.keywords || ""}>
-                                {topic.keywords || "No keywords"}
-                              </span>
-                            </td>
-                            {isAdmin && (
-                              <td className="universities-actions-cell">
-                                <div className="universities-actions">
-                                  <button
-                                    type="button"
-                                    aria-label={`View ${topic.name}`}
-                                    title="View"
-                                    onClick={() => openViewTopicModal(topic)}
-                                  >
-                                    <Eye size={16} />
-                                  </button>
-                                  <button
-                                    type="button"
-                                    aria-label={`Edit ${topic.name}`}
-                                    title="Edit"
-                                    onClick={() => openEditTopicModal(topic)}
-                                  >
-                                    <Pencil size={16} />
-                                  </button>
-                                  <button
-                                    type="button"
-                                    className="is-danger"
-                                    aria-label={`Delete ${topic.name}`}
-                                    title="Delete"
-                                    onClick={() => handleDeleteTopic(topic)}
-                                    disabled={isDeletingTopic}
-                                  >
-                                    <Trash2 size={16} />
-                                  </button>
-                                </div>
-                              </td>
-                            )}
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-
-                  {!filteredManagedTopics.length && !isLoadingTopics && (
-                    <p className="empty-recent">No topics match your search.</p>
-                  )}
-                </section>
-              </>
-          </section>
-        )}
-
-        {activePage === "users" && (
-          <section className="users-page" aria-label="Users">
-            {!isAdmin ? (
-              <p className="empty-recent">Only administrators can manage users.</p>
-            ) : (
-              <>
-                <section className="users-toolbar">
-                  <label className="university-search">
-                    <Search size={16} />
-                    <input
-                      type="search"
-                      value={userSearch}
-                      onChange={(event) => setUserSearch(event.target.value)}
-                      placeholder="Search users by name, email, or role"
-                    />
-                  </label>
-                </section>
-
-                <section className="universities-table-panel">
-                  <div className="universities-table-header">
-                    <div>
-                      <h2>User accounts</h2>
-                      <p>{isLoadingUsers ? "Loading users..." : `${filteredUsers.length} users found`}</p>
-                    </div>
-                  </div>
-
-                  <div className="universities-table-wrap">
-                    <table className="users-table">
-                      <thead>
-                        <tr>
-                          <th>Name</th>
-                          <th>Email</th>
-                          <th>Role</th>
-                          <th className="actions-heading">Actions</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {filteredUsers.map((appUser) => (
-                          <tr key={appUser.id}>
-                            <td>{appUser.name}</td>
-                            <td>{appUser.email}</td>
-                            <td className="user-role-cell">{appUser.role}</td>
-                            <td className="universities-actions-cell">
-                              <div className="universities-actions">
-                                <button
-                                  type="button"
-                                  aria-label={`View ${appUser.name}`}
-                                  title="View"
-                                  onClick={() => openViewUserModal(appUser)}
-                                >
-                                  <Eye size={16} />
-                                </button>
-                                <button
-                                  type="button"
-                                  aria-label={`Edit ${appUser.name}`}
-                                  title="Edit"
-                                  onClick={() => openEditUserModal(appUser)}
-                                >
-                                  <Pencil size={16} />
-                                </button>
-                                <button
-                                  type="button"
-                                  className="is-danger"
-                                  aria-label={`Delete ${appUser.name}`}
-                                  title="Delete"
-                                  onClick={() => handleDeleteUser(appUser)}
-                                  disabled={isDeletingUser || appUser.id === user?.id}
-                                >
-                                  <Trash2 size={16} />
-                                </button>
-                              </div>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-
-                  {!filteredUsers.length && !isLoadingUsers && (
-                    <p className="empty-recent">No users match your search.</p>
-                  )}
-                </section>
-              </>
-            )}
-          </section>
-        )}
+        {activePage === "users" && <UsersFeature {...featureProps} />}
 
         {isTopicModalOpen && (
           <div className="detail-modal-backdrop" role="presentation" onMouseDown={closeTopicModal}>
@@ -3367,6 +2291,13 @@ function DashboardPage({ user, onLogout, onUserChange }) {
                   <p>{selectedDetailItem.is_event ? "Flagged event" : "Regular item"}</p>
                 </div>
                 <div className="detail-row">
+                  <span>Flag reason</span>
+                  <p>
+                    {selectedDetailItem.event_reason ||
+                      "No specific flag reason was returned. Re-run sentiment analysis to regenerate the event explanation."}
+                  </p>
+                </div>
+                <div className="detail-row">
                   <span>Source link</span>
                   {selectedDetailItem.url ? (
                     <a href={selectedDetailItem.url} target="_blank" rel="noreferrer">
@@ -3401,6 +2332,7 @@ function DashboardPage({ user, onLogout, onUserChange }) {
           </div>
         )}
       </section>
+      <ChatAssistant />
     </main>
   );
 }

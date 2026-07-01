@@ -53,6 +53,14 @@ export const dashboardApi = {
     }),
 };
 
+export const chatApi = {
+  send: (message) =>
+    request("/chat/", {
+      method: "POST",
+      body: JSON.stringify({ message }),
+    }),
+};
+
 export const universityApi = {
   get: (universityId) => request(`/universities/${universityId}`),
   create: (university) =>

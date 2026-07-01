@@ -364,18 +364,18 @@
 .school-card > strong {
   display: block;
   margin-top: 0.55rem;
-  color: var(--violet);
+  color: var(--brand-green);
   font-size: 1.8rem;
   font-weight: 700;
   line-height: 1;
 }
 
 .school-card.accent-green > strong {
-  color: var(--positive);
+  color: var(--brand-green);
 }
 
 .school-card.accent-gold > strong {
-  color: var(--gold);
+  color: var(--brand-green);
 }
 
 .mini-mix {
@@ -540,7 +540,7 @@
 }
 
 .detail-index strong {
-  color: var(--violet);
+  color: var(--brand-green);
   font-size: 1.55rem;
   font-weight: 700;
   line-height: 1;
@@ -580,7 +580,7 @@
 }
 
 .breakdown-tile.neutral strong {
-  color: var(--neutral-text);
+  color: var(--neutral);
 }
 
 .topic-panel {
@@ -1067,6 +1067,15 @@
   overflow: hidden;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
+}
+
+.event-content .event-flag-reason {
+  display: block;
+  border-left: 3px solid var(--brand-green);
+  background: rgba(5, 68, 37, 0.07);
+  color: #2f3b33;
+  padding: 0.55rem 0.65rem;
+  -webkit-line-clamp: initial;
 }
 
 .users-page {
