@@ -15,10 +15,13 @@ from app.scraping.routes import scraping_bp
 from app.nlp.routes import nlp_bp
 from app.dashboard.routes import dashboard_bp
 from app.chat.routes import chat_bp
+from flask_cors import CORS
 
 
 app = Flask(__name__)
 app.config.from_object(Config)
+
+CORS(app, origins=[app.config["FRONTEND_URL"]], supports_credentials=True)
 
 db.init_app(app)
 mail.init_app(app)
