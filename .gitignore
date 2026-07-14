@@ -1,0 +1,20 @@
+# Python backend
+backend/venv/
+backend/__pycache__/
+backend/*.pyc
+
+# Environment variables
+backend/.env
+.env
+
+# IDE
+.vscode/
+
+# Logs
+*.log
+
+_docx_extract/
+tmp_final_docx/
+*.docx
+*.zip
+notes
