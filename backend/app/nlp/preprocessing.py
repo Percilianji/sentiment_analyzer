@@ -2,7 +2,12 @@ import re
 import string
 from nltk.corpus import stopwords
 
-STOPWORDS = set(stopwords.words("english"))
+try:
+    STOPWORDS = set(stopwords.words("english"))
+except LookupError:
+    from sklearn.feature_extraction.text import ENGLISH_STOP_WORDS
+
+    STOPWORDS = set(ENGLISH_STOP_WORDS)
 
 JUNK_PATTERNS = [
     "cookie",
