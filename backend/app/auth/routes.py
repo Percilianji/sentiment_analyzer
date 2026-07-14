@@ -89,4 +89,3 @@ def me():
 @jwt_required()
 def protected_route():
     return {"message": "You are authenticated"}
-
